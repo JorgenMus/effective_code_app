@@ -71,6 +71,63 @@ class EffectiveCodeApp:
         self.chars = []
         self.probabilities = []
 
+        # trackovani otevreneho podokna
+        self.manual_input_window_opened = False
+
+    # funkce pro overeni predane abecedy, znaky abeedy museji byt kazdy 1 znak
+    # pravdepodobnosti museji mit soucet 100 (procent)
+    def validate_alphabet(self, chars, probs):
+        """Funkce ověřuje předanou abecedu.
+        
+        Počet znaků musí být roven počtu pravděpodobností,
+        v seznamu znaků musí být každý znak o délce 1,
+        v seznamu probs musí pouze čísla a jejich součet roven 100 (%)."""
+        # overeni delky obou seznamu
+        if len(chars) != len(probs):
+            messagebox.showerror("Chyba ve zdrojové abecedě",
+                                 "počet znaků zdrojové abecedy je jiný než "
+                                 "počet předaných pravděpodobností.")
+            return False
+        
+        # overeni znaku
+        for i, char in enumerate(chars):
+            if len(char) != 1:
+                messagebox.showerror("Chyba ve zdrojové abecedě",
+                                     f"Znak ({char}) na pozici {i + 1} "
+                                     "je neplatný.")
+                return False
+        
+        # overeni pravdepodobnosti
+        try:
+            prob_sum = 0
+            for i, prob in enumerate(probs):
+                if prob > 100 or prob < 0:  # kontrola hodnoty (0-100)
+                    messagebox.showerror("Chyba ve zdrojové abecedě",
+                                         f"Pravděpodobnost ({prob}) na pozici"
+                                         f" {i + 1} není v rozsahu 0-100 %.")
+                    return False
+                prob_sum += i
+            if prob_sum != 100:  # kontrola souctu pravdepodobnosti
+                messagebox.showerror("Chyba ve zdrojové abecedě",
+                                     "Součet pravděpodobností musí být roven"
+                                     " 100 %, tato abeceda má součet "
+                                     f"{prob_sum}%.")
+                return False
+        
+        except ValueError:  # hodnota v pravdepodobnosti nejspis neni cislo
+            messagebox.showerror("Chyba ve zdrojové abecedě",
+                                 "Některá pravděpodobnost není platné číslo.")
+            return False
+        
+        # kontroly OK vraci se True
+        return True
+    
+    # pomocna funkce k zavreni predaneho okna a zmenu predaneho statusu na false
+    def close_window(self, window, window_status):
+        """Pomocná funkce uzavře předané okno a nastaví status na false."""
+        window_status[0] = False  # nutno predat jako list, aby se zmena projevila mimo funkci
+        window.destroy()
+
     def load_alphabet_from_file(self):
         """Funkce načte abecedu zdrojových znaků ze souboru."""
         file_name = filedialog.askopenfilename(filetypes=[("Text files", "*.txt"),
@@ -80,9 +137,28 @@ class EffectiveCodeApp:
             pass
 
     def manual_input_alphabet(self):
-        """Funkce umožní uživateli manuálně zadat zdrojovou abecedu."""
+        """Funkce umožní uživateli manuálně zadat zdrojovou abecedu.
+        
+        Okno je nastaveno tak, aby se nejdříve zeptalo uživatele
+        na počet znaků v abecedě a podle toho vytvořilo odpovídající
+        počet kolonek pro znaky a pravděpodobnosti. Uživatel má stále
+        možnost změnit počet znaků v abecedě, pokaždé se vytvoří nové
+        a prázdné kolonky. Okno má rovněž nastavený event handler
+        pro uzavření okna a po otevření tohoto okna musí uživatel
+        okno jedním ze způsobů ukončit (např. křížek, potvrzení abecedy)
+        aby se mohl vrátit do hlavního okna."""
+        # zamezeni otevreni tohoto okna vicekrat
+        if (self.manual_input_window_opened == True):
+            return  # nic nedelej a vrat se do hlavniho okna
+        
+        self.manual_input_window_opened = True
+        
         # vytvoreni noveho okna kam bude uzivatel zadavat znaky abecedy
         manual_input_window = tk.Toplevel(self.root)
+
+        # nastaveni aby okno muselo byt vyreseno pred navratem do hlavniho okna
+        manual_input_window.transient(self.root)
+        manual_input_window.grab_set()
 
         # rozmery noveho okna
         window_width = int(gv.WINDOW_MIN_WIDTH // 2)
@@ -92,7 +168,7 @@ class EffectiveCodeApp:
         # titulek okna
         manual_input_window.title("Ruční zadání zdrojové abecedy")
 
-        # label prompt pro uzivatele k zadani poctu znaku v abecede
+        # label prompt a entry field pro uzivatele k zadani poctu znaku v abecede
         num_of_characters_label = tk.Label(manual_input_window,
                                            text="Zadejte počet znaků abecedy:")
         num_of_characters_label.grid(row=0, column=0,
@@ -101,6 +177,12 @@ class EffectiveCodeApp:
                                            bd=3, relief=tk.GROOVE)
         num_of_characters_input.grid(row=0, column=1,
                                      padx=gv.LABEL_BUFFER_X, pady=gv.LABEL_BUFFER_Y)       
+        
+        # nastaveni eventu pro zavreni okna (status nutno predat jako list)
+        manual_input_window.protocol(
+            "WM_DELETE_WINDOW",
+            lambda: self.close_window(manual_input_window,
+                                      [self.manual_input_window_opened]))
 
         def center_subwindow(event=None):
             """Funkce automaticky zvětší rozměry podokna podle jejího obsahu.
@@ -127,12 +209,26 @@ class EffectiveCodeApp:
             # TODO dopsat
             pass
 
+        def use_alphabet(event=None):
+            """Funkce použije vyplnenou abecedu a uzavře okno manual inputu."""
+            # TODO dopsat
+            pass
+
         def create_input_fields(event=None):
             """Pomocná funkce pro vytvoření požadovaného počtu input položek."""
             # vytvoreni variable pro zadany pocet znaku abecedy
-            num_of_characters = int(num_of_characters_input.get())
+            # a kontrola zda uzivatel zadal hodnotu
+            try:
+                num_of_characters = int(num_of_characters_input.get())
+                if num_of_characters <= 0:  # uzivatel by mel zadat alespon 1
+                    raise ValueError
+            except ValueError:
+                messagebox.showerror("Chyba počtu zdrojových znaků abecedy.",
+                                     "Zadejte prosím celé kladné číslo "
+                                     "pro počet znaků zdrojové abecedy.")
+                return
 
-            # vymaze prebytecne radky (v pripade ze uzivatel zmensi pocet znaku)
+            # vymaze predchozi radky
             for widget in manual_input_window.grid_slaves():
                 if int(widget.grid_info()["row"]) > 0:
                     widget.grid_forget()
@@ -166,29 +262,38 @@ class EffectiveCodeApp:
                 
             # pridani tlacitek pod zobrazene kolonky
             num_of_cols, num_of_rows = manual_input_window.grid_size()
-            print(f"number of rows = {num_of_rows}")
             button_save_alphabet = tk.Button(manual_input_window,
                                              text="Uložit",
                                              command=save_alphabet)
             button_save_alphabet.grid(row=num_of_rows,
-                                      column=num_of_cols-1,
+                                      column=num_of_cols-2,
                                       sticky='e',
                                       pady=gv.LABEL_BUFFER_Y)
+            button_use_alphabet = tk.Button(manual_input_window,
+                                            text="Použít abecedu",
+                                            command=use_alphabet)
+            button_use_alphabet.grid(row=num_of_rows,
+                                     column=num_of_cols-1,
+                                     pady=gv.LABEL_BUFFER_Y)
                 
             # update podokna
             center_subwindow()
                 
         # tlacitko pro potvrzeni poctu znaku v abecede
-        confirm_num_of_chars_button = tk.Button(manual_input_window, text="Nová abeceda",
+        # (toto vygeneruje policka pro zadani znaku a pravdepodobnosti)
+        confirm_num_of_chars_button = tk.Button(manual_input_window,
+                                                text="Nová abeceda",
                                                 command=create_input_fields)
         confirm_num_of_chars_button.grid(row=0, column=2, sticky='w',
                                          padx=gv.LABEL_BUFFER_X,
                                          pady=gv.LABEL_BUFFER_Y*2)
-        # shortcut pro enter (ekvivalent stiskuti tlacitka OK)
+        # shortcut pro enter (ekvivalent stiskuti tlacitka "nova abeceda")
         num_of_characters_input.bind("<Return>", create_input_fields)
 
         # update podokna
         center_subwindow()
+
+        
 
 # pokud se jedna o spousteci soubor spust aplikaci
 if __name__ == "__main__":
