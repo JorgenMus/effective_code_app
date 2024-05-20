@@ -90,21 +90,23 @@ class EffectiveCodeApp:
         
 
     # funkce pro overeni predane abecedy, znaky abeedy museji byt kazdy 1 znak
-    # pravdepodobnosti museji mit soucet 1.0 (100 procent)
+    # pravdepodobnosti museji mit soucet 100 (procent)
     def is_alphabet_valid(self, chars, probs):
         """Funkce ověřuje předanou abecedu.
         
         Počet znaků musí být roven počtu pravděpodobností,
         v seznamu znaků musí být každý znak o délce 1,
-        v seznamu probs musí pouze čísla a jejich součet roven 1.0 "
-        "(tzn 100 %)."""
+        v seznamu probs musí pouze čísla a jejich součet roven 100.0 "
+        "(tzn 100.0 %)."""
         # overeni delky obou seznamu
         if len(chars) != len(probs):
             messagebox.showerror("Chyba ve zdrojové abecedě",
                                  "počet znaků zdrojové abecedy je jiný než "
                                  "počet předaných pravděpodobností.")
             return False
-        
+        # DEBUG
+        print("validating this list of values to be sum=100:\n"
+              f"values: {probs}\nsum = {sum(probs)}\n")
         # overeni znaku
         for i, char in enumerate(chars):
             if len(char) != 1:
@@ -115,18 +117,17 @@ class EffectiveCodeApp:
         
         # overeni pravdepodobnosti
         try:
-            prob_sum = 0.0
+            prob_sum = sum(probs)
             for i, prob in enumerate(probs):
-                if prob > 1 or prob < 0:  # kontrola hodnoty (0.0-1.0)
+                if prob > 100.0 or prob < 0.0:  # kontrola hodnoty (0.0-100.0)
                     messagebox.showerror("Chyba ve zdrojové abecedě",
                                          f"Pravděpodobnost ({prob}) na pozici"
-                                         f" {i + 1} není v rozsahu 0.0-1.0.")
+                                         f" {i + 1} není v rozsahu 0.0-100.0.")
                     return False
-                prob_sum += i
-            if prob_sum != 1.0:  # kontrola souctu pravdepodobnosti
+            if prob_sum != 100.0:  # kontrola souctu pravdepodobnosti
                 messagebox.showerror("Chyba ve zdrojové abecedě",
                                      "Součet pravděpodobností musí být roven"
-                                     " 1 (tzn. 100 %), tato abeceda má součet "
+                                     " 100.0 (tzn. 100 %), tato abeceda má součet "
                                      f"{prob_sum}%.")
                 return False
         
@@ -224,6 +225,35 @@ class EffectiveCodeApp:
         
         Umožní také abecedu uložit. a nebo ji použít pro program,
         tím pádem vrací 2 listy [characters, probabilities]."""
+        
+        def update_probability_sum(event=None):
+            """Pomocná funkce spočítá aktuální součet pravděpodobností a updatuje label."""
+            # pomocne variables
+            probability_sum = 0.0
+            cols, rows = alphabet_frame.grid_size()
+
+            # vypocet souctu pravdepodobnosti, ignorovat neplatne hodnoty
+            for row in range(1, rows-1): # bez posledniho radku
+                probability_input = alphabet_frame.grid_slaves(row = row,
+                                                               column = prob_input_column)[0]
+                probability_value = probability_input.get()
+                # pokud je pritomen input proved
+                if probability_value.strip():  # ignoruj prazdne stringy
+                    #try-except blok pro soucet hodnot
+                    try:
+                        probability_sum += float(probability_value)
+                    except ValueError:
+                        # ignoruj jine hodnoty
+                        pass
+            # update hodnoty v label
+            label_prob_sum.config(text=f"Suma: {probability_sum} %")
+
+            # uprav barvu textu pokud hodnota presahuje 100.000
+            if probability_sum > 100.000:
+                label_prob_sum.config(fg = gv.RED_COLOR)
+            else:
+                label_prob_sum.config(fg = gv.BLACK_COLOR)
+
         # vytvoreni editacniho okna pro zadanou abecedu
         window = tk.Toplevel(parent_window)
         window.transient(parent_window)
@@ -259,9 +289,6 @@ class EffectiveCodeApp:
         prob_label_column = 2
         prob_input_column = 3
 
-        # DEBUG
-        print(f"vytvareni celkem {size} polozek do okna\n")
-
         # vytvoreni input poli pro zadani znaku a jeho pravdepodobnosti
         # pokud byla funkce zavolana s hodnotami v chars a probs zapis je taky
         for i in range(size):
@@ -295,10 +322,14 @@ class EffectiveCodeApp:
             probability_input.grid(row=i + 1, column=prob_input_column,
                                    padx=gv.LABEL_BUFFER_X,
                                    pady=gv.LABEL_BUFFER_Y)
+            # udalosti ktere spusti update sumy pravdepodobnosti
+            probability_input.bind("<FocusIn>", update_probability_sum)
+            probability_input.bind("<KeyRelease>", update_probability_sum)
+            probability_input.bind("<FocusOut>", update_probability_sum)
             # pokud je pritomna hodnota s listu probs vloz ji
             if probs_list and i < len(probs_list):
                 probability_input.insert(0, probs_list[i])
-
+            
         def get_data():
             """Pomocná funkce získá znaky a pravdepodobnosti z user inputu.
             
@@ -337,34 +368,40 @@ class EffectiveCodeApp:
             window.destroy()
             return result_chars_list, result_probs_list
         
-        # pridani tlacitek pod zobrazene kolonky
+        # pridani tlacitek pod zobrazene kolonky a label pravdepodobnosti
         _, num_of_rows = alphabet_frame.grid_size()
         button_save_alphabet = tk.Button(alphabet_frame,
                                          text="Uložit",
                                          command=on_save_alphabet)
         button_save_alphabet.grid(row=num_of_rows,
-                                  column=prob_label_column,
+                                  column=char_input_column,
                                   sticky='e',
                                   pady=gv.LABEL_BUFFER_Y)
         button_use_alphabet = tk.Button(alphabet_frame,
                                         text="Použít abecedu",
                                         command=on_use_alphabet)
         button_use_alphabet.grid(row=num_of_rows,
-                                 column=prob_input_column,
+                                 column=prob_label_column,
                                  pady=gv.LABEL_BUFFER_Y)
+        label_prob_sum = tk.Label(alphabet_frame,
+                                  text = "Suma: 0.0 %")
+        label_prob_sum.grid(row = num_of_rows,
+                            column = prob_input_column,
+                            pady = gv.LABEL_BUFFER_Y)
 
         # vycentrovani okna
         self.center_subwindow(window, parent_window)
 
         # update podokna
         window.update_idletasks()
+        update_probability_sum()
         
         # reseni udalosti pro canvas
         def on_configure(event):
             """Pomocná funkce updatuje velikost okna a vycentruje ho."""
             canvas.configure(scrollregion=canvas.bbox("all"))
             resize_window()  # podle potreby zvetsi cele okno
-            self.center_subwindow(window, parent_window)
+            #self.center_subwindow(window, parent_window)
         alphabet_frame.bind("<Configure>", on_configure)
         
         # posouvani nahoru-dolu koleckem
