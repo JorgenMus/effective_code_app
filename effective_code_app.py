@@ -6,6 +6,7 @@ import heapq  # prace s haldami (implementace Huffmanova kodovani)
 import matplotlib.pyplot as pplt  # vytvoreni grafu/diagramu atd..
 import networkx as nx  # vytvareni, manipulace grafu a siti (pro binarni stromy)
 import gui_variables as gv  # global variables pro GUI
+import json  # ulozeni/nacteni abecedy z JSON souboru
 
 # trida pro hlavni okno aplikace
 class EffectiveCodeApp:
@@ -153,10 +154,32 @@ class EffectiveCodeApp:
         new_y = parent_y + (parent_height // 2) - (window_height // 2)
         window.geometry(f"{window_width}x{window_height}+{new_x}+{new_y}")
         
-    def save_alphabet(self):
-        """Funkce ulozi abecedu."""
-        # TODO dopsat
-        pass
+    def save_alphabet_to_json(self, chars_list, probs_list):
+        """Funkce ulozi abecedu prozatim do JSON formatu"""
+        # try-except blok ulozi data do uzivatelem zadaneho souboru
+        try:
+            # zobrazeni dialogoveho okna uzivateli s moznosti ulozeni
+            file_path = filedialog.asksaveasfilename(defaultextension=".json",
+                                                     filetypes=[("JSON files",
+                                                                 "*.json")])
+            
+            # vytvoreni dictionary udaju k ulozeni
+            alphabet_data = {"characters": chars_list,
+                             "probabilities": probs_list}
+            
+            # otevrenni souboru pro zapis (automaticke uzavreni)
+            with open(file_path, "w") as json_file:
+                # zapis do json souboru
+                json.dump(alphabet_data, json_file, indent=4)
+            
+            messagebox.showinfo("Uložení úspěšné",
+                                "Abeceda byla uložena úspěšně do souboru "
+                                f"{json_file.name}.")
+        # zachyceni chybi pri ulozeni
+        except Exception as ex:
+            messagebox.showerror("Chyba uložení souboru",
+                                 "Došlo k chybě při uložení souboru. "
+                                 f"Chybové hlášení:\n{ex}")
 
     def use_alphabet(self):
         """Funkce použije vyplnenou abecedu a uzavře okno manual inputu."""
@@ -240,12 +263,47 @@ class EffectiveCodeApp:
             if int(slave.grid_info()["column"]) == prob_input_column:
                 if isinstance(slave, tk.Entry) and alphabet_index < probs_length:
                     slave.insert(tk.END, probs_list[alphabet_index])
+        def get_data():
+            """Pomocná funkce získá znaky a pravdepodobnosti z user inputu.
+            
+            Funkce vrací 2 listy: [chars, probs]."""
+            chars = []
+            probs = []
+
+            # for-loop projde vsechny slaves v okne a postupne ulozi hodnoty
+            _, num_of_rows = alphabet_frame.grid_size()  # pocet rad v gridu
+            
+            # projdi vsechny rady mimo prvni a posledni
+            for current_row in range(1, num_of_rows - 1):
+                # ulozeni hodnoty v entry policku pro znak
+                char_input = alphabet_frame.grid_slaves(row = current_row,
+                                                        column = char_input_column)[0]
+                prob_input = alphabet_frame.grid_slaves(row = current_row,
+                                                        column = prob_input_column)[0]
+                
+                # pripojeni hodnot do seznamu chars a probs
+                chars.append(char_input.get())
+                probs.append(float(prob_input.get()))
+
+            # DEBUG
+            print(f"get_data func:\nchars:\n{chars}\nprobs:\n{probs}\n")
+
+
+
+            # vrat oba listy hodnot
+            return chars, probs
+        
+        def on_save_alphabet(event=None):
+            """Pomocná funkce získá zapsané hodnoty a uloží je."""
+            # ziskani dat z kolonek znaku a pravdepodobnosti
+            chars, probs = get_data()
+            self.save_alphabet_to_json(chars, probs)
 
         # pridani tlacitek pod zobrazene kolonky
         _, num_of_rows = alphabet_frame.grid_size()
         button_save_alphabet = tk.Button(alphabet_frame,
                                          text="Uložit",
-                                         command=self.save_alphabet)
+                                         command=on_save_alphabet)
         button_save_alphabet.grid(row=num_of_rows,
                                   column=prob_label_column,
                                   sticky='e',
@@ -265,6 +323,7 @@ class EffectiveCodeApp:
         
         # reseni udalosti pro canvas
         def on_configure(event):
+            """Pomocná funkce updatuje velikost okna a vycentruje ho."""
             canvas.configure(scrollregion=canvas.bbox("all"))
             resize_window()  # podle potreby zvetsi cele okno
             self.center_subwindow(window, parent_window)
@@ -272,10 +331,12 @@ class EffectiveCodeApp:
         
         # posouvani nahoru-dolu koleckem
         def on_mouse_wheel(event):
+            """Pomocná funkce řeší event scrollování kolečka myši."""
             canvas.yview_scroll(-int(event.delta / 60), "units")
         window.bind_all("<MouseWheel>", on_mouse_wheel)  # kolecko funguje po celem okne
 
         def resize_window():
+            """Pomocná funkce upraví velikost okna podle jeho obsahu."""
             # ziskani rozmeru frame (ktery obsahuje kolonky pro zapis)
             frame_width = alphabet_frame.winfo_reqwidth() + scrollbar.winfo_width()
             frame_height = alphabet_frame.winfo_reqheight()
