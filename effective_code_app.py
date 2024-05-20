@@ -134,24 +134,24 @@ class EffectiveCodeApp:
             pass
 
     def center_subwindow(self, window, parent_window):
-        """Funkce automaticky zvětší rozměry podokna podle jejího obsahu.
-
-        Dále jej vycentruje do hlavniho okna (bere v uvahu velikost rodice)."""
-        # ziskani updatovanych rozmeru podokna
+        """Funkce vycentruje predane okno do rodicovskeho okna."""
+        # update udalosti v okne
         window.update_idletasks()
-        updated_width = window.winfo_reqwidth() + gv.WINDOW_BUFFER
-        updated_height = window.winfo_reqheight() + gv.WINDOW_BUFFER
 
-        # ziskani aktualnich rozmeru hlavniho okna
-        root_width = parent_window.winfo_width()
+        # ziskani pozice a rozmeru rodicovskeho okna
+        parent_x = parent_window.winfo_x()
+        parent_y = parent_window.winfo_y()
+        parent_width = parent_window.winfo_width()
+        parent_height = parent_window.winfo_height()
 
-        # vypocet novych koordinatu podokna
-        subwindow_x = parent_window.winfo_x() + (root_width - updated_width) // 2
-        subwindow_y = parent_window.winfo_y() + gv.WINDOW_BUFFER
+        # rozmery okna ktere se ma vycentrovat
+        window_width = window.winfo_width()
+        window_height = window.winfo_height()
 
-        # nastaveni nove pozice a rozmeru + vycentrovani do hlavniho okna
-        window.geometry(
-            f"{updated_width}x{updated_height}+{subwindow_x}+{subwindow_y}")
+        # vypocet nove (x, y) pozice pro okno
+        new_x = parent_x + (parent_width // 2) - (window_width // 2)
+        new_y = parent_y + (parent_height // 2) - (window_height // 2)
+        window.geometry(f"{window_width}x{window_height}+{new_x}+{new_y}")
         
     def save_alphabet(self):
         """Funkce ulozi abecedu."""
