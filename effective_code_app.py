@@ -173,8 +173,8 @@ class EffectiveCodeApp:
         # omezeni velikosti okna
         screen_width = parent_window.winfo_screenwidth()
         screen_height = parent_window.winfo_screenheight()
-        window.maxsize(width= int(screen_width - gv.WINDOW_BUFFER * 2),
-                       height= int(screen_height - gv.WINDOW_BUFFER * 4))
+        window.maxsize(width= int(screen_width - (gv.WINDOW_BUFFER * 2)),
+                       height= int(screen_height - (gv.WINDOW_BUFFER * 8)))
         
         # nutno pouzit canvas pro umozneni scrolovani (scrollregion(l,t,r,b))
         canvas = tk.Canvas(window, scrollregion=(0, 0, 0,
@@ -266,12 +266,29 @@ class EffectiveCodeApp:
         # reseni udalosti pro canvas
         def on_configure(event):
             canvas.configure(scrollregion=canvas.bbox("all"))
+            resize_window()  # podle potreby zvetsi cele okno
+            self.center_subwindow(window, parent_window)
         alphabet_frame.bind("<Configure>", on_configure)
         
         # posouvani nahoru-dolu koleckem
         def on_mouse_wheel(event):
             canvas.yview_scroll(-int(event.delta / 60), "units")
         window.bind_all("<MouseWheel>", on_mouse_wheel)  # kolecko funguje po celem okne
+
+        def resize_window():
+            # ziskani rozmeru frame (ktery obsahuje kolonky pro zapis)
+            frame_width = alphabet_frame.winfo_reqwidth() + scrollbar.winfo_width()
+            frame_height = alphabet_frame.winfo_reqheight()
+
+            # ziskani max rozmeru
+            max_width, max_height = window.maxsize()
+
+            # vypocet nove velikosti pro okno
+            new_width = min(frame_width, max_width)
+            new_height = min(frame_height, max_height)
+
+            # update geometrie
+            window.geometry(f"{new_width}x{new_height}")
 
     def prompt_for_alphabet_size(self, parent_window):
         """Funkce vytvoří nové podokno do předaného root okna.
