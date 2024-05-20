@@ -59,7 +59,7 @@ class EffectiveCodeApp:
         # tlacitko pro nacteni ze souboru
         self.button_load_alphabet = tk.Button(self.panel_alphabet,
                                               text="Načíst ze souboru",
-                                              command=self.load_alphabet_from_file)
+                                              command=self.on_load_alphabet)
         self.button_load_alphabet.pack(fill=tk.X)
 
         # tlacitko pro manualni zadani abecedy
@@ -72,9 +72,26 @@ class EffectiveCodeApp:
         self.chars = []
         self.probabilities = []
 
+    def on_load_alphabet(self):
+        """Funkce provede nacteni abecedy ze souboru a kontrolu abecedy."""
+        # nacti data abecedy z json souboru
+        chars, probs = self.load_alphabet_from_json_file()
+
+        # validace abecedy (pokud nejaka chyba spust editaci abecedy)
+        if self.is_alphabet_valid(chars, probs) == False:
+            size = max(len(chars), len(probs))
+            chars, probs = self.edit_alphabet_window(size,
+                                                     chars,
+                                                     probs,
+                                                     self.root)
+            
+        # DEBUG
+        print(f"on_load_function: on exiting the function (alphabet should be repaierd):\nchars:\n{chars}\nprobs:\n{probs}")
+        
+
     # funkce pro overeni predane abecedy, znaky abeedy museji byt kazdy 1 znak
     # pravdepodobnosti museji mit soucet 1.0 (100 procent)
-    def validate_alphabet(self, chars, probs):
+    def is_alphabet_valid(self, chars, probs):
         """Funkce ověřuje předanou abecedu.
         
         Počet znaků musí být roven počtu pravděpodobností,
@@ -90,7 +107,7 @@ class EffectiveCodeApp:
         
         # overeni znaku
         for i, char in enumerate(chars):
-            if len(char) != 1.0:
+            if len(char) != 1:
                 messagebox.showerror("Chyba ve zdrojové abecedě",
                                      f"Znak ({char}) na pozici {i + 1} "
                                      "je neplatný.")
@@ -106,7 +123,7 @@ class EffectiveCodeApp:
                                          f" {i + 1} není v rozsahu 0.0-1.0.")
                     return False
                 prob_sum += i
-            if prob_sum != 1:  # kontrola souctu pravdepodobnosti
+            if prob_sum != 1.0:  # kontrola souctu pravdepodobnosti
                 messagebox.showerror("Chyba ve zdrojové abecedě",
                                      "Součet pravděpodobností musí být roven"
                                      " 1 (tzn. 100 %), tato abeceda má součet "
@@ -126,13 +143,34 @@ class EffectiveCodeApp:
         """Pomocná funkce uzavře předané okno"""
         window.destroy()
 
-    def load_alphabet_from_file(self):
-        """Funkce načte abecedu zdrojových znaků ze souboru."""
-        file_name = filedialog.askopenfilename(filetypes=[("Text files", "*.txt"),
-                                                          ("Excel files", "*.xlsx")])
-        if file_name:
-            # TODO implementace nacteni souboru a vykresleni abecedy do panelu abecedy
-            pass
+    def load_alphabet_from_json_file(self):
+        """Funkce načte abecedu zdrojových znaků ze souboru z JSON souboru.
+        
+        Funkce vrací 2 listy: [characters, probabilities]."""
+        try:
+            # prompt uzivateli kde muze otevrit json soubory s abecedou
+            file_name = filedialog.askopenfilename(filetypes=[("JSON files",
+                                                               "*.json")])
+            
+            # pokud uzivatel zvolil soubor pokracuj
+            if file_name:
+                with open(file_name, "r") as json_file:
+                    # nacteni json dat do listu chars a probs
+                    alphabet_data = json.load(json_file)
+                    chars = alphabet_data.get(gv.JSON_CHARACTERS_NAME, [])
+                    probs = alphabet_data.get(gv.JSON_PROBABILITIES_NAME, [])
+
+                    # DEBUG
+                    print("load_alphabet function:\n"
+                          f"chars:\n{chars}\n"
+                          f"probs:\n{probs}\n")
+                    print(f"sum of probabilities: {sum(probs)}\n")
+                    
+
+                    return chars, probs
+        except Exception as ex:
+            messagebox.showerror("Chyba načtení abecedy",
+                                 f"Došlo k chybě při načítání abecedy.\n{ex}")
 
     def center_subwindow(self, window, parent_window):
         """Funkce vycentruje predane okno do rodicovskeho okna."""
@@ -164,8 +202,8 @@ class EffectiveCodeApp:
                                                                  "*.json")])
             
             # vytvoreni dictionary udaju k ulozeni
-            alphabet_data = {"characters": chars_list,
-                             "probabilities": probs_list}
+            alphabet_data = {gv.JSON_CHARACTERS_NAME: chars_list,
+                             gv.JSON_PROBABILITIES_NAME: probs_list}
             
             # otevrenni souboru pro zapis (automaticke uzavreni)
             with open(file_path, "w") as json_file:
@@ -181,17 +219,19 @@ class EffectiveCodeApp:
                                  "Došlo k chybě při uložení souboru. "
                                  f"Chybové hlášení:\n{ex}")
 
-    def use_alphabet(self):
-        """Funkce použije vyplnenou abecedu a uzavře okno manual inputu."""
-        # TODO dopsat
-        pass
-
     def edit_alphabet_window(self, size, chars_list, probs_list, parent_window):
-        """Pomocná funkce pro vytvoření požadovaného počtu input položek."""
+        """Funkce vytvoří editační okno pro předanou abecedu.
+        
+        Umožní také abecedu uložit. a nebo ji použít pro program,
+        tím pádem vrací 2 listy [characters, probabilities]."""
         # vytvoreni editacniho okna pro zadanou abecedu
         window = tk.Toplevel(parent_window)
         window.transient(parent_window)
         window.grab_set()
+
+        # promenne pro navrat z funkce
+        result_chars_list = []
+        result_probs_list = []
 
         # omezeni velikosti okna
         screen_width = parent_window.winfo_screenwidth()
@@ -219,8 +259,14 @@ class EffectiveCodeApp:
         prob_label_column = 2
         prob_input_column = 3
 
+        # DEBUG
+        print(f"vytvareni celkem {size} polozek do okna\n")
+
         # vytvoreni input poli pro zadani znaku a jeho pravdepodobnosti
+        # pokud byla funkce zavolana s hodnotami v chars a probs zapis je taky
         for i in range(size):
+            # DEBUG
+            print(f"row index = {i}\n")
             # label prompt pro zadani znaku
             char_label = tk.Label(alphabet_frame, text=f"Znak {i + 1}:")
             char_label.grid(row=i + 1, column=char_label_column,
@@ -232,6 +278,10 @@ class EffectiveCodeApp:
             char_input.grid(row=i + 1, column=char_input_column,
                             padx=gv.LABEL_BUFFER_X,
                             pady=gv.LABEL_BUFFER_Y)
+            
+            # pokud je pritomna hodnota vloz ji to policka
+            if chars_list and i < len(chars_list):
+                char_input.insert(0, chars_list[i])
             
             #label prompt pro zadani pravdepodobnosti znaku
             probability_label = tk.Label(alphabet_frame,
@@ -245,24 +295,10 @@ class EffectiveCodeApp:
             probability_input.grid(row=i + 1, column=prob_input_column,
                                    padx=gv.LABEL_BUFFER_X,
                                    pady=gv.LABEL_BUFFER_Y)
-        
-        # udaje pro urceni delek predanych seznamu znaku a pravdepodobnosti
-        alphabet_index = 0
-        chars_length = len(chars_list)
-        probs_length = len(probs_list)
+            # pokud je pritomna hodnota s listu probs vloz ji
+            if probs_list and i < len(probs_list):
+                probability_input.insert(0, probs_list[i])
 
-        # projiti vsech slaves v okne a zapis pritomne predane hodnoty
-        for slave in alphabet_frame.grid_slaves():
-            # update rady na ktere se nachazi aktualni slave
-            alphabet_index = int(slave.grid_info()["row"])
-            # reseni zapisu znaku abecedy
-            if int(slave.grid_info()["column"]) == char_input_column:
-                if isinstance(slave, tk.Entry) and alphabet_index < chars_length:
-                    slave.insert(tk.END, chars_list[alphabet_index])
-            # reseni zapisu pravdepodobnosti znaku
-            if int(slave.grid_info()["column"]) == prob_input_column:
-                if isinstance(slave, tk.Entry) and alphabet_index < probs_length:
-                    slave.insert(tk.END, probs_list[alphabet_index])
         def get_data():
             """Pomocná funkce získá znaky a pravdepodobnosti z user inputu.
             
@@ -285,11 +321,6 @@ class EffectiveCodeApp:
                 chars.append(char_input.get())
                 probs.append(float(prob_input.get()))
 
-            # DEBUG
-            print(f"get_data func:\nchars:\n{chars}\nprobs:\n{probs}\n")
-
-
-
             # vrat oba listy hodnot
             return chars, probs
         
@@ -299,6 +330,13 @@ class EffectiveCodeApp:
             chars, probs = get_data()
             self.save_alphabet_to_json(chars, probs)
 
+        def on_use_alphabet(event=None):
+            """Pomocná funkce vrací 2 listy ze zadaných hodnot: [chars, probs]."""
+            nonlocal result_chars_list, result_probs_list
+            result_chars_list, result_probs_list = get_data()
+            window.destroy()
+            return result_chars_list, result_probs_list
+        
         # pridani tlacitek pod zobrazene kolonky
         _, num_of_rows = alphabet_frame.grid_size()
         button_save_alphabet = tk.Button(alphabet_frame,
@@ -310,7 +348,7 @@ class EffectiveCodeApp:
                                   pady=gv.LABEL_BUFFER_Y)
         button_use_alphabet = tk.Button(alphabet_frame,
                                         text="Použít abecedu",
-                                        command=self.use_alphabet)
+                                        command=on_use_alphabet)
         button_use_alphabet.grid(row=num_of_rows,
                                  column=prob_input_column,
                                  pady=gv.LABEL_BUFFER_Y)
@@ -443,11 +481,6 @@ class EffectiveCodeApp:
         if num_of_characters == None:
             return
         
-
-        # DEBUG
-        print(f"fce manual_input_alphabet: num_of_characters = {num_of_characters}\n")
-
-
         # debug cvicne znaky a pravdepodobnosti
         default_chars = ['A', 'B', 'C', 'D']
         default_probs = [0.25, 0.50, 0.20, 0.05]
