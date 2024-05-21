@@ -155,7 +155,7 @@ class EffectiveCodeApp:
             
             # pokud uzivatel zvolil soubor pokracuj
             if file_name:
-                with open(file_name, "r") as json_file:
+                with open(file_name, "r", encoding = "utf-8") as json_file:
                     # nacteni json dat do listu chars a probs
                     alphabet_data = json.load(json_file)
                     chars = alphabet_data.get(gv.JSON_CHARACTERS_NAME, [])
@@ -251,6 +251,8 @@ class EffectiveCodeApp:
             # uprav barvu textu pokud hodnota presahuje 100.000
             if probability_sum > 100.000:
                 label_prob_sum.config(fg = gv.RED_COLOR)
+            elif probability_sum == 100.0:
+                label_prob_sum.config(fg = gv.GREEN_COLOR)
             else:
                 label_prob_sum.config(fg = gv.BLACK_COLOR)
 

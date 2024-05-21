@@ -25,6 +25,7 @@ PANEL_ALPHABET_LABEL_BG = "#888c8c"
 PANEL_GRAPHICS_BG = "#D3D3D3"  # ligthgray
 RED_COLOR = "#FF0000"  # red
 BLACK_COLOR = "#000000"  # black
+GREEN_COLOR = "#008000"  # green
 
 # prace se soubory
 JSON_CHARACTERS_NAME = "characters"
