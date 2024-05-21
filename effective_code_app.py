@@ -39,7 +39,8 @@ class EffectiveCodeApp:
                                        borderwidth=gv.PANEL_BORDER_WIDTH,
                                        relief=gv.PANEL_RELIEF_STYLE)
         self.panel_alphabet.pack(side=tk.LEFT,  # leva strana okna
-                                 fill=tk.Y)  # fill na vysku
+                                 fill=tk.Y,  # fill na vysku
+                                 expand = False)  # nebude se rozsirovat  
 
         # panel pro grafiku (vykreslovani stromu atd..)
         self.panel_graphics = tk.Frame(self.main_frame,
@@ -55,25 +56,33 @@ class EffectiveCodeApp:
                                        text="Zdrojová abeceda",
                                        bg=gv.PANEL_ALPHABET_LABEL_BG)
         self.label_alphabet.pack(fill=tk.X)
+        self.label_alphabet.bindtags((gv.PERMANENT_TAG_STRING,)
+                                     + self.label_alphabet.bindtags())
 
         # tlacitko pro nacteni ze souboru
         self.button_load_alphabet = tk.Button(self.panel_alphabet,
                                               text="Načíst ze souboru",
                                               command=self.on_load_alphabet)
         self.button_load_alphabet.pack(fill=tk.X)
+        self.button_load_alphabet.bindtags((gv.PERMANENT_TAG_STRING,)
+                                     + self.button_load_alphabet.bindtags())
 
         # tlacitko pro manualni zadani abecedy
         self.button_manual_input_alphabet = tk.Button(self.panel_alphabet,
                                                       text="Vytvořit abecedu",
                                                       command=self.manual_input_alphabet)
         self.button_manual_input_alphabet.pack(fill=tk.X)
+        self.button_manual_input_alphabet.bindtags((gv.PERMANENT_TAG_STRING,)
+                                                   + self.button_manual_input_alphabet.bindtags())
 
         # data - pri inicializaci prazdne
-        self.chars = []
-        self.probabilities = []
+        self.characters_list = []
+        self.probabilities_list = []
 
     def on_load_alphabet(self):
-        """Funkce provede nacteni abecedy ze souboru a kontrolu abecedy."""
+        """Funkce provede načtení abecedy ze souboru a kontrolu abecedy.
+        
+        V případě špatně zadaných znaků v abecedě otevře editační okno."""
         # nacti data abecedy z json souboru
         chars, probs = self.load_alphabet_from_json_file()
 
@@ -85,9 +94,85 @@ class EffectiveCodeApp:
                                                      probs,
                                                      self.root)
             
-        # DEBUG
-        print(f"on_load_function: on exiting the function (alphabet should be repaierd):\nchars:\n{chars}\nprobs:\n{probs}")
+        # predej abecedu oknu pro dalsi praci
+        self.use_alphabet(chars, probs)
+
+    def use_alphabet(self, chars, probs):
+        """Funkce nastavi predanou abecedu do hlavniho okna pro dalsi praci.
         
+        Po uložení abecedy do okna projde widgety v panelu abecedy a vymaže
+        předchoží abecedu pomoci winfo_children() funkce, která vrací
+        pouze přímé potomky uložené v panel_alphabet, které smaže,
+        pokud nejsou označeny jako permanentní."""
+        # ulozeni znaku a pravdepodobnosti do okna
+        self.characters_list = chars
+        self.probabilities_list = probs
+
+        # zamezeni zvetseni panelu pro abecedu (dulezite) jinak se po pridani
+        # labels nize panel rozsiri
+        self.panel_alphabet.pack_propagate(False)
+
+        def clear_alphabet_panel():
+            """Pomocná funkce vymaze ne-permanentní widgety z panelu abecedy."""
+            # vymazani predchozich widgetu mimo funkcnich tlacitek
+            for widget in self.panel_alphabet.winfo_children():
+                if gv.PERMANENT_TAG_STRING not in widget.bindtags():
+                    widget.destroy()
+
+        def create_alphabet_widgets():
+            """Pomocná funkce do panelu abecedy vytvoří potřebné widgety."""
+            # pridani button pro editaci abecedy pod existujici widgety
+            def on_button_edit_click():
+                """Pomocná funkce reší event kliknutí na tlačítko pro editaci abecedy."""
+                self.edit_alphabet_window(len(self.characters_list),
+                                              self.characters_list,
+                                              self.probabilities_list,
+                                              self.root)
+                
+            button_edit = tk.Button(self.panel_alphabet,
+                                    text = "Editace abecedy",
+                                    command = on_button_edit_click)
+            button_edit.pack(fill = "x")
+
+            # nutno pouzit canvas pro umozneni scrolovani (scrollregion(l,t,r,b))
+            canvas = tk.Canvas(self.panel_alphabet,
+                               scrollregion=(0, 0, 0,
+                                             gv.SCROLLBAR_VERTICAL_LIMIT))
+            canvas.pack(side="left", fill="both", expand=False)
+
+            # scrollbar na strane
+            scrollbar = tk.Scrollbar(self.panel_alphabet,
+                                     orient="vertical",
+                                     command=canvas.yview)
+            scrollbar.pack(side="right", fill="y")
+            canvas.configure(yscrollcommand=scrollbar.set)
+
+            # vytvoreni frame pro zabouzdreni abecedy
+            alphabet_frame = tk.Frame(canvas)
+            canvas.create_window((0, 0), window = alphabet_frame, anchor="nw")
+
+            # pridani labels pro znaky a pravdepodobnosti abecedy
+            for char, prob in zip(self.characters_list, self.probabilities_list):
+                char_label = tk.Label(alphabet_frame,
+                                      text = f"{char}: {prob: .3f} %")
+                char_label.pack(anchor = "w", padx=gv.LABEL_BUFFER_X)
+
+            # posouvani nahoru-dolu koleckem
+            def on_mouse_wheel(event):
+                """Pomocná funkce řeší event scrollování kolečka myši."""
+                canvas.yview_scroll(-int(event.delta / 60), "units")
+
+            # po celem canvasu lze scrollovat
+            canvas.bind_all("<MouseWheel>", on_mouse_wheel)
+
+            # update scrolovane oblasti
+            alphabet_frame.update_idletasks()
+
+            # nastaveni oblasti regionu pro scrollovani na updatovanou oblast
+            canvas.config(scrollregion = canvas.bbox("all"))
+                             
+        clear_alphabet_panel()
+        create_alphabet_widgets()
 
     # funkce pro overeni predane abecedy, znaky abeedy museji byt kazdy 1 znak
     # pravdepodobnosti museji mit soucet 100 (procent)
@@ -104,9 +189,7 @@ class EffectiveCodeApp:
                                  "počet znaků zdrojové abecedy je jiný než "
                                  "počet předaných pravděpodobností.")
             return False
-        # DEBUG
-        print("validating this list of values to be sum=100:\n"
-              f"values: {probs}\nsum = {sum(probs)}\n")
+        
         # overeni znaku
         for i, char in enumerate(chars):
             if len(char) != 1:
@@ -260,6 +343,7 @@ class EffectiveCodeApp:
         window = tk.Toplevel(parent_window)
         window.transient(parent_window)
         window.grab_set()
+        window.title("Editace abecedy")
 
         # promenne pro navrat z funkce
         result_chars_list = []

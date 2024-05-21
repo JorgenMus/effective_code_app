@@ -17,6 +17,7 @@ SCROLLBAR_VERTICAL_LIMIT = 5000
 # buffer pro labels
 LABEL_BUFFER_X = 10
 LABEL_BUFFER_Y = 5
+LABEL_BUFFER_Y_SMALL = 2
 
 # barvy
 PANEL_TOOLS_BG = "#9AA2A3"  # gray
@@ -30,3 +31,6 @@ GREEN_COLOR = "#008000"  # green
 # prace se soubory
 JSON_CHARACTERS_NAME = "characters"
 JSON_PROBABILITIES_NAME = "probabilities"
+
+# tags pro oznaceni widgetu ktere se nesmi mazat
+PERMANENT_TAG_STRING = "permanent"
