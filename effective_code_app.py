@@ -285,6 +285,10 @@ class EffectiveCodeApp:
                                                      filetypes=[("JSON files",
                                                                  "*.json")])
             
+            # pokud uzivatel nezvoli soubor a napr. zavre okno, vrat se
+            if not file_path:
+                return
+            
             # vytvoreni dictionary udaju k ulozeni
             alphabet_data = {gv.JSON_CHARACTERS_NAME: chars_list,
                              gv.JSON_PROBABILITIES_NAME: probs_list}
@@ -436,7 +440,12 @@ class EffectiveCodeApp:
                 
                 # pripojeni hodnot do seznamu chars a probs
                 chars.append(char_input.get())
-                probs.append(float(prob_input.get()))
+                # konverze jinych znaku nez cisel (do probs promenne)
+                try:
+                    probs.append(float(prob_input.get()))
+                except ValueError:
+                    probs.append(0.0)
+                
 
             # vrat oba listy hodnot
             return chars, probs
