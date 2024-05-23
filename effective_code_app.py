@@ -124,10 +124,11 @@ class EffectiveCodeApp:
             # pridani button pro editaci abecedy pod existujici widgety
             def on_button_edit_click():
                 """Pomocná funkce reší event kliknutí na tlačítko pro editaci abecedy."""
-                self.edit_alphabet_window(len(self.characters_list),
-                                              self.characters_list,
-                                              self.probabilities_list,
-                                              self.root)
+                chars, probs = self.edit_alphabet_window(len(self.characters_list),
+                                                             self.characters_list,
+                                                             self.probabilities_list,
+                                                             self.root)
+                
                 
             button_edit = tk.Button(self.panel_alphabet,
                                     text = "Editace abecedy",
@@ -613,14 +614,12 @@ class EffectiveCodeApp:
         if num_of_characters == None:
             return
         
-        # debug cvicne znaky a pravdepodobnosti
-        default_chars = ['A', 'B', 'C', 'D']
-        default_probs = [0.25, 0.50, 0.20, 0.05]
-
         # otevreni editace abecedy s prazdnou abecedou
         chars = []
         probs = []
-        data = self.edit_alphabet_window(num_of_characters, chars, probs, self.root)
+        chars, probs = self.edit_alphabet_window(num_of_characters, chars, probs, self.root)
+
+        self.use_alphabet(chars, probs)
        
 
 # pokud se jedna o spousteci soubor spust aplikaci
