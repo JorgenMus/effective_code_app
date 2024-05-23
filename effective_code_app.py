@@ -25,12 +25,12 @@ class EffectiveCodeApp:
         self.main_frame.pack(fill=tk.BOTH, expand=True)
 
         # panel nastroju
-        self.panel_tools = tk.Frame(self.main_frame,
-                                    height=gv.PANEL_TOOLS_HEIGHT,
-                                    bg=gv.PANEL_TOOLS_BG,
+        self.panel_modes = tk.Frame(self.main_frame,
+                                    height=gv.PANEL_MODES_HEIGHT,
+                                    bg=gv.PANEL_MODES_BG,
                                     borderwidth=gv.PANEL_BORDER_WIDTH,
                                     relief=gv.PANEL_RELIEF_STYLE)
-        self.panel_tools.pack(fill=tk.X)  # fill na sirku
+        self.panel_modes.pack(fill=tk.X)  # fill na sirku
 
         # panel pro abecedu
         self.panel_alphabet = tk.Frame(self.main_frame,
@@ -79,6 +79,109 @@ class EffectiveCodeApp:
         self.characters_list = []
         self.probabilities_list = []
 
+        # aktualni mod zobrazeni pro graficky panel
+        self.current_mode = None
+
+    # funkce updatuje vzhled tlacitek podle aktualniho modu
+    def update_buttons_style(self, active_button):
+        """Funkce updatuje vzhled tlačítek panelu módů podle aktuálního módu."""
+        # projdi vsechny buttons v panelu modu
+        for button in self.panel_modes.winfo_children():
+            # pro aktivni tlacitko se nastavi odlisny vzhled
+            if button == active_button:
+                button.config(bg = gv.ACTIVE_BUTTON_COLOR,  # aktivni button
+                              relief = gv.ACTIVE_BUTTON_RELIEF)
+            else:
+                button.config(bg = gv.INACTIVE_BUTTON_COLOR,  # neaktivni button
+                              relief = gv.INACTIVE_BUTTON_RELIEF)
+
+    # funkce vymaze widgety z panelu modu
+    def clear_panel_modes(self):
+        """Funkce vymaže obsah panelu módů."""
+        for widget in self.panel_modes.winfo_children():
+            widget.destroy()
+
+    # funkce vymaze widgety v grafickem panelu a pripravi tak pro nove udaje
+    def clear_panel_graphics(self):
+        """Funkce vymaže obsah grafického panelu (widgets)."""
+        for widget in self.panel_graphics.winfo_children():
+            widget.destroy()
+
+    # Funkce vypise do panel_graphics informace o abecede
+    def show_alphabet_info(self):
+        """Funkce do grafického panelu vypíše informace o zdrojové abecedě."""
+        # nejdrive vycistit panel
+        self.clear_panel_graphics()
+        
+        # informace o abecede
+        txt = "informace o zdrojové abecedě:\n"
+        for char, prob in zip(self.characters_list, self.probabilities_list):
+            txt += f"{char}: {prob:.2f} %\n"
+
+        label_info = tk.Label(self.panel_graphics,
+                              text = txt,
+                              justify = tk.LEFT)
+        label_info.pack(fill = tk.BOTH,
+                        expand = True)
+
+    # debug test function (to be replaces later)
+    def show_test_stuff(self):
+        self.clear_panel_graphics()
+        test_label = tk.Label(self.panel_graphics,
+                              text = "TESTING MODE",
+                              bg = "pink")
+        test_label.pack(fill="both", expand=True)
+
+    # funkce pro vytvoreni tlacitek pro prepinani modu zobrazeni abecedy
+    def create_modes_buttons(self):
+        """Funkce vytvoří sadu tlačítek na panel nástrojů.
+        
+        Tlačítka se uživateli zobrazí až v případě, že načte, nebo
+        vytvoří a použije abecedu znaků. Slouží k přepínání režimů zobrazení
+        informací o zdrojové abecedě a použití."""
+
+        # funkce nastavi aktualni mod podle stisknuteho button modu
+        def set_active_mode(mode, button):
+            """Funkce nastaví aktuální mód a updatuje vzhled tlačítek."""
+            self.current_mode = mode
+            self.update_buttons_style(button)
+
+            # podle modu zobraz pozadovane data do grafickeho panelu
+            match mode:
+                case gv.MODE_ALPHABET_INFORMATION:
+                    self.show_alphabet_info()
+                case gv.MODE_TESTING:
+                    self.show_test_stuff()
+                # TODO zde doplnit dalsi tlacitka co se pridaji do panelu modu
+                case None:
+                    pass
+                case _:  # default
+                    messagebox.showerror("Error módu",
+                                         "Pokus o spuštění módu ("
+                                         f"{str(mode)}) se nezdařil.")
+
+        # tlacitko pro mod informaci o abecede
+        modes_button_info = tk.Button(self.panel_modes,
+                                      text = "Informace o abecedě",
+                                      command = lambda: set_active_mode(gv.MODE_ALPHABET_INFORMATION,
+                                                                        modes_button_info))
+        modes_button_info.pack(side = tk.LEFT,
+                               padx = gv.BUTTON_BUFFER,
+                               pady = gv.BUTTON_BUFFER)
+        
+        # debug - test button, need to add more functionality for shannon stuff etc.
+        modes_button_second = tk.Button(self.panel_modes,
+                                        text = "test button",
+                                        command = lambda: set_active_mode(gv.MODE_TESTING,
+                                                                          modes_button_second))
+        modes_button_second.pack(side = tk.LEFT,
+                                 padx = gv.BUTTON_BUFFER,
+                                 pady = gv.BUTTON_BUFFER)
+        
+        # pri prvotni inicializaci aktivuj tlacitko pro info o abecede
+        set_active_mode(gv.MODE_ALPHABET_INFORMATION, modes_button_info)
+
+
     def on_load_alphabet(self):
         """Funkce provede načtení abecedy ze souboru a kontrolu abecedy.
         
@@ -114,11 +217,6 @@ class EffectiveCodeApp:
         self.characters_list = chars
         self.probabilities_list = probs
 
-
-        # debug
-        print("\tUSE_ALPHABET(SELF, CHARS, PROBS):\n"
-              f"chars: {chars}\nprobs: {probs}")
-
         # zamezeni zvetseni panelu pro abecedu (dulezite) jinak se po pridani
         # labels nize panel rozsiri
         self.panel_alphabet.pack_propagate(False)
@@ -129,6 +227,10 @@ class EffectiveCodeApp:
             for widget in self.panel_alphabet.winfo_children():
                 if gv.PERMANENT_TAG_STRING not in widget.bindtags():
                     widget.destroy()
+            
+            # vycisti i panel modu a grafiku jelikoz soucasna abeceda jiz nebude
+            self.clear_panel_modes()
+            self.clear_panel_graphics()
 
         def create_alphabet_widgets():
             """Pomocná funkce do panelu abecedy vytvoří potřebné widgety."""
@@ -171,7 +273,7 @@ class EffectiveCodeApp:
             # pridani labels pro znaky a pravdepodobnosti abecedy
             for char, prob in zip(self.characters_list, self.probabilities_list):
                 char_label = tk.Label(alphabet_frame,
-                                      text = f"{char}: {prob: .3f} %")
+                                      text = f"{char}: {prob: .2f} %")
                 char_label.pack(anchor = "w", padx=gv.LABEL_BUFFER_X)
 
             # posouvani nahoru-dolu koleckem
@@ -188,8 +290,11 @@ class EffectiveCodeApp:
             # nastaveni oblasti regionu pro scrollovani na updatovanou oblast
             canvas.config(scrollregion = canvas.bbox("all"))
                              
+        # vytvoreni udaju pro vybranou abecedu
         clear_alphabet_panel()
         create_alphabet_widgets()
+        self.create_modes_buttons()
+
 
     # funkce pro overeni predane abecedy, znaky abeedy museji byt kazdy 1 znak
     # pravdepodobnosti museji mit soucet 100 (procent)
