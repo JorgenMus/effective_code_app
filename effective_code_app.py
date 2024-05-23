@@ -94,8 +94,14 @@ class EffectiveCodeApp:
                                                      probs,
                                                      self.root)
             
-        # predej abecedu oknu pro dalsi praci
-        self.use_alphabet(chars, probs)
+        # validace po editaci abecedy
+        if self.is_alphabet_valid(chars, probs):
+            # predej abecedu oknu pro dalsi praci
+            self.use_alphabet(chars, probs)
+        else:
+            messagebox.showwarning("Varování",
+                                   "Předaná abeceda není validní.")
+
 
     def use_alphabet(self, chars, probs):
         """Funkce nastavi predanou abecedu do hlavniho okna pro dalsi praci.
@@ -107,6 +113,11 @@ class EffectiveCodeApp:
         # ulozeni znaku a pravdepodobnosti do okna
         self.characters_list = chars
         self.probabilities_list = probs
+
+
+        # debug
+        print("\tUSE_ALPHABET(SELF, CHARS, PROBS):\n"
+              f"chars: {chars}\nprobs: {probs}")
 
         # zamezeni zvetseni panelu pro abecedu (dulezite) jinak se po pridani
         # labels nize panel rozsiri
@@ -122,13 +133,18 @@ class EffectiveCodeApp:
         def create_alphabet_widgets():
             """Pomocná funkce do panelu abecedy vytvoří potřebné widgety."""
             # pridani button pro editaci abecedy pod existujici widgety
-            def on_button_edit_click():
+            def on_button_edit_click(event=None):
                 """Pomocná funkce reší event kliknutí na tlačítko pro editaci abecedy."""
                 chars, probs = self.edit_alphabet_window(len(self.characters_list),
                                                              self.characters_list,
                                                              self.probabilities_list,
                                                              self.root)
-                
+                # validace po editace, pokud je editace platna pouzij novou
+                if chars and probs:
+                    if self.is_alphabet_valid(chars, probs):
+                        self.use_alphabet(chars, probs)
+                else:
+                    return
                 
             button_edit = tk.Button(self.panel_alphabet,
                                     text = "Editace abecedy",
@@ -164,7 +180,7 @@ class EffectiveCodeApp:
                 canvas.yview_scroll(-int(event.delta / 60), "units")
 
             # po celem canvasu lze scrollovat
-            canvas.bind_all("<MouseWheel>", on_mouse_wheel)
+            self.root.bind("<MouseWheel>", on_mouse_wheel)
 
             # update scrolovane oblasti
             alphabet_frame.update_idletasks()
@@ -383,8 +399,6 @@ class EffectiveCodeApp:
         # vytvoreni input poli pro zadani znaku a jeho pravdepodobnosti
         # pokud byla funkce zavolana s hodnotami v chars a probs zapis je taky
         for i in range(size):
-            # DEBUG
-            print(f"row index = {i}\n")
             # label prompt pro zadani znaku
             char_label = tk.Label(alphabet_frame, text=f"Znak {i + 1}:")
             char_label.grid(row=i + 1, column=char_label_column,
@@ -447,7 +461,6 @@ class EffectiveCodeApp:
                 except ValueError:
                     probs.append(0.0)
                 
-
             # vrat oba listy hodnot
             return chars, probs
         
@@ -459,10 +472,17 @@ class EffectiveCodeApp:
 
         def on_use_alphabet(event=None):
             """Pomocná funkce vrací 2 listy ze zadaných hodnot: [chars, probs]."""
+            # promenne z venku teto funkce
             nonlocal result_chars_list, result_probs_list
-            result_chars_list, result_probs_list = get_data()
-            window.destroy()
-            return result_chars_list, result_probs_list
+            temp_chars, temp_probs = get_data()
+
+            # pokud je abeceda v poradku uloz do listu mimo tuto funkci
+            if (self.is_alphabet_valid(temp_chars, temp_probs)):
+                result_chars_list = temp_chars
+                result_probs_list = temp_probs
+                on_edit_window_close()
+            else:
+                return
         
         # pridani tlacitek pod zobrazene kolonky a label pravdepodobnosti
         _, num_of_rows = alphabet_frame.grid_size()
@@ -484,14 +504,6 @@ class EffectiveCodeApp:
         label_prob_sum.grid(row = num_of_rows,
                             column = prob_input_column,
                             pady = gv.LABEL_BUFFER_Y)
-
-        # vycentrovani okna
-        self.center_subwindow(window, parent_window)
-
-        # update podokna
-        window.update_idletasks()
-        update_probability_sum()
-        
         # reseni udalosti pro canvas
         def on_configure(event):
             """Pomocná funkce updatuje velikost okna a vycentruje ho."""
@@ -504,7 +516,7 @@ class EffectiveCodeApp:
         def on_mouse_wheel(event):
             """Pomocná funkce řeší event scrollování kolečka myši."""
             canvas.yview_scroll(-int(event.delta / 60), "units")
-        window.bind_all("<MouseWheel>", on_mouse_wheel)  # kolecko funguje po celem okne
+        window.bind("<MouseWheel>", on_mouse_wheel)  # kolecko funguje po celem okne
 
         def resize_window():
             """Pomocná funkce upraví velikost okna podle jeho obsahu."""
@@ -521,6 +533,28 @@ class EffectiveCodeApp:
 
             # update geometrie
             window.geometry(f"{new_width}x{new_height}")
+
+        # cinnosti pri zavreni okna
+        def on_edit_window_close():
+            # unbind eventu kolecka mysi
+            window.unbind("<MouseWheel>")
+            window.destroy()
+
+        # protokol pri zavreni okna
+        window.protocol("WM_DELETE_WINDOW", on_edit_window_close)
+
+        # vycentrovani okna
+        self.center_subwindow(window, parent_window)
+
+        # update podokna
+        window.update_idletasks()
+        update_probability_sum()
+
+        # cekani na zavreni okan (jeho destroy())
+        window.wait_window(window)
+
+        return result_chars_list, result_probs_list
+
 
     def prompt_for_alphabet_size(self, parent_window):
         """Funkce vytvoří nové podokno do předaného root okna.
@@ -576,7 +610,7 @@ class EffectiveCodeApp:
                    padx=gv.LABEL_BUFFER_X,
                    pady=gv.LABEL_BUFFER_Y)
 
-        input_field.bind("<Return>", lambda event: confirm())  
+        input_field.bind_all("<Return>", lambda event: confirm())  
         
         # nastaveni eventu pro zavreni okna (status nutno predat jako list)
         window.protocol("WM_DELETE_WINDOW", on_close)
@@ -619,7 +653,13 @@ class EffectiveCodeApp:
         probs = []
         chars, probs = self.edit_alphabet_window(num_of_characters, chars, probs, self.root)
 
-        self.use_alphabet(chars, probs)
+        # kontrola zda seznamy nejsou prazdne
+        if chars and probs:
+            self.use_alphabet(chars, probs)
+        else:
+            messagebox.showwarning("Varování",
+                                   "Abeceda je prázdná, zkuste abecedu "
+                                   "vytvořit a uložit, poté jí načíst.")
        
 
 # pokud se jedna o spousteci soubor spust aplikaci
