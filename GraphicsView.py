@@ -7,6 +7,5 @@ import tkinter as tk
 class GraphicsView(tk.Frame):
     def __init__(self, parent):
         """Inicializace pro úvodní nastavení objektu."""
-        super.__init__(parent)
+        super().__init__(parent)
 
-    

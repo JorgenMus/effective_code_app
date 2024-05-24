@@ -7,7 +7,7 @@ import matplotlib.pyplot as pplt  # vytvoreni grafu/diagramu atd..
 import networkx as nx  # vytvareni, manipulace grafu a siti (pro binarni stromy)
 import gui_variables as gv  # global variables pro GUI
 import json  # ulozeni/nacteni abecedy z JSON souboru
-import GraphicsView  # moje trida pro zapouzdreni ruznych zobrazeni dat
+from GraphicsView import GraphicsView  # moje trida pro zapouzdreni ruznych zobrazeni dat
 
 # trida pro hlavni okno aplikace
 class EffectiveCodeApp:
@@ -278,19 +278,23 @@ class EffectiveCodeApp:
         self.probabilities_list = probs
 
         # nastaveni calc_ promennych podle pouzite abecedy pro dalsi vypocty
-        # prevod pravdepodobnosti do desetinneho zapisu procent
-        self.calc_probabilities_list = [prob / 100 for prob in probs]
+        # prevod pravdepodobnosti do desetinneho zapisu procent (zaokrouhleno na 3 desetinna mista)
+        self.calc_probabilities_list = [round(prob / 100,
+                                              gv.NUM_OF_DECIMAL_PLACES)
+                                              for prob in probs]
 
-        # vypocet mnozstvi informace kterou nese kazdy znak (shannonova forlume)
+        # vypocet mnozstvi informace kterou nese kazdy znak (shannonova formule)
         self.calc_characters_information_list = [
-            -math.log2(prob) for prob in self.calc_probabilities_list
+            round(-math.log2(prob),
+                  gv.NUM_OF_DECIMAL_PLACES)
+                  for prob in self.calc_probabilities_list
         ]
         # vypocet prumerne informacni hodnoty jednoho znaku
-        self.calc_average_information_amount = 0
+        self.calc_average_information_amount = 0.0
         for prob, information_value in zip(self.calc_probabilities_list,
                                            self.calc_characters_information_list):
             self.calc_average_information_amount += prob * information_value        
-
+        round(self.calc_average_information_amount, gv.NUM_OF_DECIMAL_PLACES)
         # debug
         print("calc_ promenne:\n"
               f"calc_probabilities_list: {self.calc_probabilities_list}\n"
@@ -532,7 +536,7 @@ class EffectiveCodeApp:
 
             # pokus o zamezeni moznym chybam vzniklych pravdepodobne pri
             # prevozu z binarni soustavy pri souctech
-            probability_sum = round(probability_sum, 3)
+            probability_sum = round(probability_sum, gv.NUM_OF_DECIMAL_PLACES)
 
             # update hodnoty v label
             label_prob_sum.config(text=f"Suma: {probability_sum} %")

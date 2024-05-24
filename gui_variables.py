@@ -42,6 +42,8 @@ MODE_ALPHABET_INFORMATION = "INFO"
 MODE_TESTING = "TESTING"
 DRAG_MOVEMENT_SPEED = 1  # rychlost posouvani pro graficky panel
 
+# hodnoty pro matematicke operace
+NUM_OF_DECIMAL_PLACES = 3
 
 # prace se soubory
 JSON_CHARACTERS_NAME = "characters"
