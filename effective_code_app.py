@@ -7,6 +7,7 @@ import matplotlib.pyplot as pplt  # vytvoreni grafu/diagramu atd..
 import networkx as nx  # vytvareni, manipulace grafu a siti (pro binarni stromy)
 import gui_variables as gv  # global variables pro GUI
 import json  # ulozeni/nacteni abecedy z JSON souboru
+import GraphicsView  # moje trida pro zapouzdreni ruznych zobrazeni dat
 
 # trida pro hlavni okno aplikace
 class EffectiveCodeApp:
@@ -42,14 +43,32 @@ class EffectiveCodeApp:
                                  fill=tk.Y,  # fill na vysku
                                  expand = False)  # nebude se rozsirovat  
 
-        # panel pro grafiku (vykreslovani stromu atd..)
+        # panel pro jednotlive mody zobrazeni (tk.Frame pro pripadne budouci
+        # zabaleni dalsich ovladacich prvku nad zobrazene udaje)
         self.panel_graphics = tk.Frame(self.main_frame,
-                                       bg=gv.PANEL_GRAPHICS_BG,
-                                       borderwidth=gv.PANEL_BORDER_WIDTH,
-                                       relief=gv.PANEL_RELIEF_STYLE)
+                                        bg=gv.PANEL_GRAPHICS_BG,
+                                        borderwidth=gv.PANEL_BORDER_WIDTH,
+                                        relief=gv.PANEL_RELIEF_STYLE)
         self.panel_graphics.pack(side=tk.RIGHT,
                                  fill=tk.BOTH,
                                  expand=True)
+        # canvas do ktereho se vlozi zabalene informace ktere pujde posouvat po canvasu
+        self.graphics_canvas = tk.Canvas(self.panel_graphics)
+        self.graphics_canvas.pack(side = tk.BOTTOM,
+                                  fill = tk.BOTH,
+                                  expand = True)
+        # zabalene informace pomoci tridy GraphicsView
+        self.graphics_view = GraphicsView(self.graphics_canvas)
+        self.graphics_canvas.create_window((0, 0),
+                                           window = self.graphics_view,
+                                           anchor = tk.CENTER)
+
+        # binding udalosti pro posun obsahu
+        self.panel_graphics.bind("<Configure>", self.on_graphics_frame_config)
+        self.graphics_view.bind("<ButtonPress-1>",  # stisk tlacitka mysi
+                                 self.on_mouse_click)
+        self.graphics_view.bind("<B1-Motion>",  # pohyb mysi pri stisknuti
+                                 self.on_mouse_movement)
         
         # label pro panel abecedy
         self.label_alphabet = tk.Label(self.panel_alphabet,
@@ -82,6 +101,41 @@ class EffectiveCodeApp:
         # aktualni mod zobrazeni pro graficky panel
         self.current_mode = None
 
+        # inicializace promennych, ktere jsou pouzivany pro vypocty
+        self.calc_probabilities_list = []
+        self.calc_characters_information_list = []
+        self.calc_average_information_amount = 0
+
+    # event funkce konfigurace scrollreguinu grafickeho panelu
+    def on_graphics_frame_config(self, event):
+        """Pomocná funkce řeší event konfigurace grafickeho panelu."""
+        self.graphics_canvas.configure(scrollregion = self.graphics_canvas.bbox("all"))
+
+    # event funkce pri stisknu tlacitka mysi
+    def on_mouse_click(self, event):
+        """Pomocná funkce řeší event stisku levého tlačítka myši."""
+        print(f"Canvas button press at ({event.x}, {event.y})")  # debug
+        #self.graphics_canvas.scan_mark(event.x, event.y)
+
+        self.mouse_click_start_x = event.x
+        self.mouse_click_start_y = event.y
+
+    #event funkce pri pohybu mysi
+    def on_mouse_movement(self, event):
+        """Pomocná funkce řeší event pohybu myši."""
+        print(f"Canvas mouse movement at ({event.x}, {event.y})")  # debug
+
+        #self.graphics_canvas.scan_dragto(event.x, event.y, gain = gv.DRAG_MOVEMENT_SPEED)
+        # vypocet mnozstvi o kolik ma byt posunuty graphics_view
+        x_amount = event.x - self.mouse_click_start_x
+        y_amount = event.y - self.mouse_click_start_y
+
+        self.graphics_canvas.move(self.graphics_view, x_amount, y_amount)
+        
+        # aktualizovat souradnice pro pripadny dalsi event
+        self.mouse_click_start_x = event.x
+        self.mouse_click_start_y = event.y
+
     # funkce updatuje vzhled tlacitek podle aktualniho modu
     def update_buttons_style(self, active_button):
         """Funkce updatuje vzhled tlačítek panelu módů podle aktuálního módu."""
@@ -89,10 +143,10 @@ class EffectiveCodeApp:
         for button in self.panel_modes.winfo_children():
             # pro aktivni tlacitko se nastavi odlisny vzhled
             if button == active_button:
-                button.config(bg = gv.ACTIVE_BUTTON_COLOR,  # aktivni button
+                button.configure(bg = gv.ACTIVE_BUTTON_COLOR,  # aktivni button
                               relief = gv.ACTIVE_BUTTON_RELIEF)
             else:
-                button.config(bg = gv.INACTIVE_BUTTON_COLOR,  # neaktivni button
+                button.configure(bg = gv.INACTIVE_BUTTON_COLOR,  # neaktivni button
                               relief = gv.INACTIVE_BUTTON_RELIEF)
 
     # funkce vymaze widgety z panelu modu
@@ -104,7 +158,7 @@ class EffectiveCodeApp:
     # funkce vymaze widgety v grafickem panelu a pripravi tak pro nove udaje
     def clear_panel_graphics(self):
         """Funkce vymaže obsah grafického panelu (widgets)."""
-        for widget in self.panel_graphics.winfo_children():
+        for widget in self.graphics_canvas.winfo_children():
             widget.destroy()
 
     # Funkce vypise do panel_graphics informace o abecede
@@ -118,16 +172,21 @@ class EffectiveCodeApp:
         for char, prob in zip(self.characters_list, self.probabilities_list):
             txt += f"{char}: {prob:.2f} %\n"
 
-        label_info = tk.Label(self.panel_graphics,
+        label_info = tk.Label(self.graphics_canvas,
                               text = txt,
                               justify = tk.LEFT)
         label_info.pack(fill = tk.BOTH,
                         expand = True)
+        
+        # bind udalosti pro kliknuti na zobrazene udaje pro pohyb mysi
+        label_info.bind("<ButtonPress-1>",  # stisk tlacitka mysi
+                        self.on_mouse_click)
+        label_info.bind("<B1-Motion>", self.on_mouse_movement)
 
     # debug test function (to be replaces later)
     def show_test_stuff(self):
         self.clear_panel_graphics()
-        test_label = tk.Label(self.panel_graphics,
+        test_label = tk.Label(self.graphics_canvas,
                               text = "TESTING MODE",
                               bg = "pink")
         test_label.pack(fill="both", expand=True)
@@ -177,6 +236,7 @@ class EffectiveCodeApp:
         modes_button_second.pack(side = tk.LEFT,
                                  padx = gv.BUTTON_BUFFER,
                                  pady = gv.BUTTON_BUFFER)
+
         
         # pri prvotni inicializaci aktivuj tlacitko pro info o abecede
         set_active_mode(gv.MODE_ALPHABET_INFORMATION, modes_button_info)
@@ -217,6 +277,26 @@ class EffectiveCodeApp:
         self.characters_list = chars
         self.probabilities_list = probs
 
+        # nastaveni calc_ promennych podle pouzite abecedy pro dalsi vypocty
+        # prevod pravdepodobnosti do desetinneho zapisu procent
+        self.calc_probabilities_list = [prob / 100 for prob in probs]
+
+        # vypocet mnozstvi informace kterou nese kazdy znak (shannonova forlume)
+        self.calc_characters_information_list = [
+            -math.log2(prob) for prob in self.calc_probabilities_list
+        ]
+        # vypocet prumerne informacni hodnoty jednoho znaku
+        self.calc_average_information_amount = 0
+        for prob, information_value in zip(self.calc_probabilities_list,
+                                           self.calc_characters_information_list):
+            self.calc_average_information_amount += prob * information_value        
+
+        # debug
+        print("calc_ promenne:\n"
+              f"calc_probabilities_list: {self.calc_probabilities_list}\n"
+              f"calc_characters_information_list: {self.calc_characters_information_list}\n"
+              f"calc_average_information_amount: {self.calc_average_information_amount}\n")
+        
         # zamezeni zvetseni panelu pro abecedu (dulezite) jinak se po pridani
         # labels nize panel rozsiri
         self.panel_alphabet.pack_propagate(False)
@@ -290,8 +370,10 @@ class EffectiveCodeApp:
             # nastaveni oblasti regionu pro scrollovani na updatovanou oblast
             canvas.config(scrollregion = canvas.bbox("all"))
                              
-        # vytvoreni udaju pro vybranou abecedu
+        # vymazani predchozich udaju k abecede
         clear_alphabet_panel()
+
+        # vytvoreni udaju pro vybranou (novou) abecedu
         create_alphabet_widgets()
         self.create_modes_buttons()
 
@@ -364,14 +446,7 @@ class EffectiveCodeApp:
                     # nacteni json dat do listu chars a probs
                     alphabet_data = json.load(json_file)
                     chars = alphabet_data.get(gv.JSON_CHARACTERS_NAME, [])
-                    probs = alphabet_data.get(gv.JSON_PROBABILITIES_NAME, [])
-
-                    # DEBUG
-                    print("load_alphabet function:\n"
-                          f"chars:\n{chars}\n"
-                          f"probs:\n{probs}\n")
-                    print(f"sum of probabilities: {sum(probs)}\n")
-                    
+                    probs = alphabet_data.get(gv.JSON_PROBABILITIES_NAME, [])                    
 
                     return chars, probs
         except Exception as ex:
@@ -454,6 +529,11 @@ class EffectiveCodeApp:
                     except ValueError:
                         # ignoruj jine hodnoty
                         pass
+
+            # pokus o zamezeni moznym chybam vzniklych pravdepodobne pri
+            # prevozu z binarni soustavy pri souctech
+            probability_sum = round(probability_sum, 3)
+
             # update hodnoty v label
             label_prob_sum.config(text=f"Suma: {probability_sum} %")
 

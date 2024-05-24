@@ -40,6 +40,7 @@ INACTIVE_BUTTON_RELIEF = "raised"
 # mody grafickeho panelu (podle stiskleho tlacitka)
 MODE_ALPHABET_INFORMATION = "INFO"
 MODE_TESTING = "TESTING"
+DRAG_MOVEMENT_SPEED = 1  # rychlost posouvani pro graficky panel
 
 
 # prace se soubory
