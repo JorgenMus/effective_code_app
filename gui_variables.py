@@ -54,3 +54,7 @@ JSON_PROBABILITIES_NAME = "probabilities"
 
 # tags pro oznaceni widgetu ktere se nesmi mazat
 PERMANENT_TAG_STRING = "permanent"
+
+# snad univerzalni font pro text
+FONT_UNIVERSAL = "Arial"
+FONT_SIZE = 14

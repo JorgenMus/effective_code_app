@@ -194,7 +194,7 @@ class EffectiveCodeApp:
         # nejdrive vycistit panel
         self.clear_panel_graphics()
         self.graphics_view.show_alphabet(self.calc_average_information_amount,
-                                         ["Znak", "Pravděpodobnost", "Množství informace"],
+                                         ["Znak", "Pravděpodobnost (P [%])", "Množství informace [bitů]"],
                                          self.characters_list,
                                          self.calc_probabilities_list,
                                          self.calc_characters_information_list)

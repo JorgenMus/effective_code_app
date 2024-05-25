@@ -11,6 +11,7 @@ class GraphicsView(tk.Frame):
         """Inicializace pro úvodní nastavení objektu."""
         super().__init__(parent)
         self.parent = parent
+        self.graphics_font = (gv.FONT_UNIVERSAL, gv.FONT_SIZE)
 
     def clear_frame(self):
         """Funkce vymaže veškerý obsah který má v tk.Frame uložený."""
@@ -39,16 +40,20 @@ class GraphicsView(tk.Frame):
         # do prvniho radku umistit predane nazvy sloupcu
         for col, col_name in enumerate(column_names_list):
             label = tk.Label(self, text = col_name,
+                             font = self.graphics_font,
                              borderwidth = gv.LABEL_BORDER_WIDTH,
                              relief = "solid")
             label.grid(row = 0,
                        column = col,
                        sticky = "nsew")
-
+        # kazdemu listu se priradi jeho index (col) a projdou se vsechny listy
+        for col_index, list in enumerate(lists_of_values):
+            # prochazet se budou indexy (pro row) pro nejdelsi list
+            for row_index in range(max_list_length):
         # prochazet se budou indexy pro nejdelsi list
-        for row_index in range(max_list_length):  # row zastupuje dany element konkretnim listu
+        #for row_index in range(max_list_length):  # row zastupuje dany element konkretnim listu
             # kazdemu listu se priradi jeho index (col) a projdou se vsechny listy
-            for col_index, list in enumerate(lists_of_values):  # enumerate >> (number, list)
+        #    for col_index, list in enumerate(lists_of_values):  # enumerate >> (number, list)
                 # try-except blok zkusi vlozit hodnotu pod indexem
                 try:
                     value = list[row_index]  # kazdy element z listu na svuj radek
@@ -60,19 +65,22 @@ class GraphicsView(tk.Frame):
                     value = round(value, gv.NUM_OF_DECIMAL_PLACES)
 
                 # vytvoreni label do tk.Frame
-                label = tk.Label(self, text = f"{value}",     
+                label = tk.Label(self, text = f"{value}",  
+                                 font = self.graphics_font, 
                                  borderwidth = gv.LABEL_BORDER_WIDTH,
-                                 relief = "solid")
+                                 relief = "solid",
+                                 anchor = "w")
                 label.grid(row = row_index + 1,  # plus 1 kvuli prvni rade jmen sloupcu
                            column = col_index,
                            sticky = "nsew")
         
         # pod posledni vytvoreny radek pridej label pro avg_info_value
         label_avg = tk.Label(self,
-                             text = f"Průměrná informační hodnota znaku: {avg_info_value}",
+                             text = f"Průměrná informační hodnota znaku: {avg_info_value} bitů.",
+                             font = self.graphics_font,
                              borderwidth = gv.LABEL_BORDER_WIDTH,
                              relief = "solid")
-        label_avg.grid(row = max_list_length,
+        label_avg.grid(row = max_list_length + 1,
                        column = 0,
                        columnspan = num_of_lists, sticky = "nsew")
         
