@@ -12,7 +12,7 @@ WINDOW_MIN_HEIGHT = 600
 WINDOW_BUFFER = 20
 
 # scrollbar
-SCROLLBAR_VERTICAL_LIMIT = 5000
+SCROLLBAR_VERTICAL_LIMIT = 3000
 SCROLLBAR_HORIZONTAL_LIMIT = 5000
 SCROLLBAR_WIDTH = 25
 
@@ -43,6 +43,9 @@ INACTIVE_BUTTON_RELIEF = "raised"
 # mody grafickeho panelu (podle stiskleho tlacitka)
 MODE_ALPHABET_INFORMATION = "INFO"
 MODE_TESTING = "TESTING"
+MODE_USE_ENCODING_METHOD = "ENCODE"
+
+
 DRAG_MOVEMENT_SPEED = 1  # rychlost posouvani pro graficky panel
 
 # hodnoty pro matematicke operace
@@ -58,3 +61,8 @@ PERMANENT_TAG_STRING = "permanent"
 # snad univerzalni font pro text
 FONT_UNIVERSAL = "Arial"
 FONT_SIZE = 14
+
+# hodnoty pro combobox selekci metod
+COMBOBOX_METHOD_SHANNON = "Shannon-Fanova"
+COMBOBOX_METHOD_HUFFMAN = "Huffmanova"
+COMBOBOX_PROMPT = "Vybrat metodu kódování"

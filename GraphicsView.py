@@ -98,7 +98,7 @@ class GraphicsView(tk.Frame):
         self.center_position()
 
         # debug
-        print(f"show_test_info after: grid size = {self.grid_size()}\n")
+        #print(f"show_test_info after: grid size = {self.grid_size()}\n")
 
     def center_position(self):
         self.parent.update_idletasks()
@@ -106,31 +106,18 @@ class GraphicsView(tk.Frame):
         parent_height = self.parent.winfo_height()
         width = self.winfo_reqwidth()
         height = self.winfo_reqheight()
-
-        # pokud neni co centrovat preskoc
-        #if width <= 1 or height <= 1:
-        #    #debug print
-        #    print("\tskipping center function its irrelevant.\n")
-        #    return
         
         new_x = (parent_width // 2) - (width // 2)
         new_y = (parent_height // 2) - (height // 2)
-        #self.parent.create_window((new_x + gv.WINDOW_BUFFER, new_y + gv.WINDOW_BUFFER),
+        # debug 2. pokus o center
+        #self.parent.create_window((new_x, new_y),
         #                          window = self,
-        #                          width = parent_width - (2 * gv.WINDOW_BUFFER),
-        #                          height = parent_height - (2 * gv.WINDOW_BUFFER),
         #                          anchor = "center")
         
-        # debug 2. pokus o center
-        self.parent.create_window((new_x, new_y),
+        # debug 3. pokus o center
+        self.parent.create_window((0, 0),
                                   window = self,
                                   anchor = "center")
-        #debug
-        print(f"centruju pozici graphicsview:\n"
-              f"\tparent width, height: ({parent_width}, {parent_height})\n"
-              f"\twidth, height: ({width}, {height})\n"
-              f"\tstare coords: ({self.winfo_x()}, {self.winfo_y()}\n"
-              f"\tnove coords: ({new_x}, {new_y})\n")
 
     def move_to(self, x, y):
         # TODO

@@ -1,5 +1,5 @@
 import tkinter as tk  # pro vykresleni GUI aplikace
-from tkinter import filedialog, messagebox # dialog okno a message okno
+from tkinter import filedialog, messagebox, ttk # dialog, message okna a combobox(ttk)
 import pandas as pd  # pro pripadne nacitani a zpracovani dat z excel souboru
 import math
 import heapq  # prace s haldami (implementace Huffmanova kodovani)
@@ -117,6 +117,30 @@ class EffectiveCodeApp:
         self.calc_characters_information_list = []
         self.calc_average_information_amount = 0
 
+        # podle zvolene metody kodovani sem se budou ukladat vypoctene hodnoty
+        self.shannon_complete = False
+        self.shannon_encoded_chars_list = []
+        self.shannon_avg_codeword_length = 0
+        self.shannon_code_effectivity = 0.0
+        self.shannon_source_entropy = 0.0
+
+        self.huffman_complete = False
+        self.huffman_encoded_chars_list = []
+        self.huffman_avg_codeword_length = 0
+        self.huffman_code_effectivity = 0.0
+        self.huffman_source_entropy = 0.0
+
+        # metoda kodovani
+        self.encoding_method = None
+
+    # event vyberu metody kodovani uzivatelem
+    def on_method_selected(self, event):
+        """Funcke řeší event výběru metody z comboboxu."""
+        self.encoding_method = event.widget.get()
+
+        # debug
+        print(f"vybrana hodnota z comboboxu: {self.encoding_method}\n")
+
     # event konfigurace canvasu
     def on_graphics_canvas_configure(self, event):
         """Funkce se stará o nastaveni scrollregionu a vycentrovani obsahu."""
@@ -128,19 +152,25 @@ class EffectiveCodeApp:
                                     xscrollincrement = 1)
         self.v_scrollbar.config(width = gv.SCROLLBAR_WIDTH)
         self.h_scrollbar.config(width = gv.SCROLLBAR_WIDTH)
+
+        # debug pokus o pohyb scrollbaru do jejich stredu
+        ratio_x = 0.3
+        ratio_y = 0.35
+        self.graphics_canvas.yview_moveto(ratio_y)
+        self.graphics_canvas.xview_moveto(ratio_x)
         self.graphics_canvas.update_idletasks()
         
         # pokud je neco v graphics_view vycentruj to
-        if self.graphics_view.winfo_children():
-            self.graphics_view.center_position()
-        else:
-            return
+        #if self.graphics_view.winfo_children():
+        #    self.graphics_view.center_position()
+        #else:
+        #    return
 
 
     # event funkce pri stisknu tlacitka mysi
     def on_mouse_click(self, event):
         """Pomocná funkce řeší event stisku levého tlačítka myši."""
-        print(f"Canvas button press at ({event.x}, {event.y})")  # debug
+        #print(f"Canvas button press at ({event.x}, {event.y})")  # debug
         #self.graphics_canvas.scan_mark(event.x, event.y)
 
         self.mouse_click_start_x = event.x
@@ -149,7 +179,7 @@ class EffectiveCodeApp:
     #event funkce pri pohybu mysi
     def on_mouse_movement(self, event):
         """Pomocná funkce řeší event pohybu myši."""
-        print(f"Canvas mouse movement at ({event.x}, {event.y})")  # debug
+        #print(f"Canvas mouse movement at ({event.x}, {event.y})")  # debug
 
         #self.graphics_canvas.scan_dragto(event.x, event.y, gain = gv.DRAG_MOVEMENT_SPEED)
         # vypocet mnozstvi o kolik ma byt posunuty graphics_view
@@ -167,13 +197,15 @@ class EffectiveCodeApp:
         """Funkce updatuje vzhled tlačítek panelu módů podle aktuálního módu."""
         # projdi vsechny buttons v panelu modu
         for button in self.panel_modes.winfo_children():
-            # pro aktivni tlacitko se nastavi odlisny vzhled
-            if button == active_button:
-                button.configure(bg = gv.ACTIVE_BUTTON_COLOR,  # aktivni button
-                              relief = gv.ACTIVE_BUTTON_RELIEF)
-            else:
-                button.configure(bg = gv.INACTIVE_BUTTON_COLOR,  # neaktivni button
-                              relief = gv.INACTIVE_BUTTON_RELIEF)
+            # nastav styl pouze widgetum ktere jsou tk.Button
+            if isinstance(button, tk.Button):
+                # pro aktivni tlacitko se nastavi odlisny vzhled
+                if button == active_button:
+                    button.configure(bg = gv.ACTIVE_BUTTON_COLOR,  # aktivni button
+                                  relief = gv.ACTIVE_BUTTON_RELIEF)
+                else:
+                    button.configure(bg = gv.INACTIVE_BUTTON_COLOR,  # neaktivni button
+                                  relief = gv.INACTIVE_BUTTON_RELIEF)
 
     # funkce vymaze widgety z panelu modu
     def clear_panel_modes(self):
@@ -203,6 +235,128 @@ class EffectiveCodeApp:
         self.clear_panel_graphics()
         self.graphics_view.show_test_info()   
 
+    # kodovani zdrojove abecedy pomoci metody shannon-fanovy
+    def encode_alphabet_shannon(self):
+        """Funkce použije Shannon-fanovu metodu kódování na zdrojovou abecedu."""
+
+
+        # debug
+        print(f"spusteno kodovani podle shannona..\n")
+
+
+
+        # overeni ze byla vybrana metoda kodovani
+        if self.encoding_method == None:
+            return False
+        
+        # overeni ze jsou pritomny jiz vypocitane potrebne hodnoty
+        if not self.calc_probabilities_list:
+            return False
+
+        # reset hodnot
+        self.shannon_complete = False
+        self.shannon_encoded_chars_list = []
+        self.shannon_avg_codeword_length = 0
+        self.shannon_code_effectivity = 0.0
+        self.shannon_source_entropy = 0.0
+
+        #do teto promenne se ulozi list hodnot (kodu)
+        codes_list = [''] * len(self.calc_probabilities_list)
+
+        # algoritmus
+        # 1. serazeni podle pravdepodobnosti sestupne
+
+        # list dvojic (char, prob) - napr (('a', 0.2), ('b', 0.23),...)
+        paired_values = list(zip(self.characters_list, self.calc_probabilities_list))
+        sorted_values_descending = sorted(paired_values,
+                                          key = lambda x: x[1],  # podle 2. prvku (prob)
+                                          reverse = True)  # descending order
+        #print(f"listy serazene:\n{sorted_values_descending}\n")  # debug print
+        #print(f"listy serazenych hodnot:\nchars:\n{chars_sorted}\nprobs:\n{probs_sorted}\n")  #debug print
+
+        # prvotni rozdeleni na 2 poloviny podle sumy (horni "polovina" vyssich
+        # hodnot pravdepodobnosti pokud mozno neprekroci sumu spodni "poloviny")
+        def shannon_recursive(pairs_char_prob_list):
+            """
+            Očekává serazeny list dvojic (char, prob)
+            - např. [['a', 0.2], ['b', 0.25], ['c', 0.05],...]
+            vraci list kodu pro predany list
+            -> ["001", "011",...]."""
+            # pokud predany list nema alespon 2 listy dvojic [char, prob] vrat prazdny list kodu
+            if len(pairs_char_prob_list) <= 1:
+                return []
+
+            # rozdel predany list na 2 mensi posdle sumy
+            lower_sum_list, higher_sum_list = split_list(pairs_char_prob_list)
+
+            #debug
+            print(f"lower_list: {lower_sum_list}, higher_list: {higher_sum_list}\n"
+                  f"volam na kazdy rekurzy")
+            # ziskani kodu pro oba listy - REKURZE
+            codes_low_sum_list = shannon_recursive(lower_sum_list)
+            codes_higher_sum_list = shannon_recursive(higher_sum_list)
+
+            print(f"Výsledné kódy pro seznam: {pairs_char_prob_list}")  # debug
+            # pridani prefix '1' kodum ze seznamu s mensi sumou
+            for char, prob in lower_sum_list:
+                pass
+
+        # pomocna funkce pro rozdeleni na 2 listy podle sum
+        def split_list(pairs_char_prob_list):
+            """Pomocná funkce rozdělí předaný list dvojic na 2 mensi listy.
+
+            Očekává serazeny list dvojic (char, prob)
+            - např. [['a', 0.2], ['b', 0.25], ['c', 0.05],...]
+            Vrací dva listy dvojic(char, prob):
+            -> lower_sum_list, higher_sum_list."""
+
+            #debug
+            print(f"\tsplitting list: {pairs_char_prob_list}...")
+            lower_sum_list = []
+            higher_sum_list = []
+            # pokud predany list paru neni prazdny proved vypocty
+            if pairs_char_prob_list:
+                # polovina souctu pravdepodobnosti
+                # - limit pro sumu horniho listu (lower_sum_list)
+                limit_sum = sum(pair[1] for pair in pairs_char_prob_list) / 2
+
+                # debug
+                print(f"\t\tlimit_sum = {limit_sum}")
+                # prubezna suma
+                cumulative_sum = 0.0
+                # index prvku ktery je poslednim prvkem horniho listu
+                split_index = 0
+                # smycka postupne scita pravdepodobnosti a hleda kde rozdelit list
+                for index, (_, prob) in enumerate(pairs_char_prob_list):  # vytazeni prob
+                    # ukonci loop pokud by suma prekrocila limit
+                    cumulative_sum += prob
+                    # pokud dosavadni suma presahla limit zde se list rozdeli
+                    if cumulative_sum > limit_sum:
+                        split_index = index
+                        break
+                    
+                #debug
+                print(f"\t\tnalezen index: {split_index}")
+                # nalezen index rozdeleni, vloz hodnoty do 2 mensich listu
+                lower_sum_list = pairs_char_prob_list[:split_index]  # do indexu
+                higher_sum_list = pairs_char_prob_list[split_index:]  # od index
+
+                print(f"\t\tlisty: {lower_sum_list} and {higher_sum_list}")
+            # vrat 2 listy (pokud predany argument byl prazdny vrati se
+            # 2 prazdne listy hned po jejich inicializaci, ale usetri se vypocty)
+            return lower_sum_list, higher_sum_list
+
+        # kodovani hotovo 
+        self.shannon_complete = True
+
+    def encode_alphabed_huffman(self):
+        print("spusteno kodovani podle huffmana..\n")
+        pass
+
+    def show_encoded_data(self):
+        # TODO
+        pass
+
     # funkce pro vytvoreni tlacitek pro prepinani modu zobrazeni abecedy
     def create_modes_buttons(self):
         """Funkce vytvoří sadu tlačítek na panel nástrojů.
@@ -230,6 +384,37 @@ class EffectiveCodeApp:
                     messagebox.showerror("Error módu",
                                          "Pokus o spuštění módu ("
                                          f"{str(mode)}) se nezdařil.")
+        # event kliknuti na button ktery pokud je vybrana metoda kodovani provede encode
+        def on_encode_button_click():
+            """Funkce řeší event kliknutí na tlačítko použití zvolené metody kódování."""
+            # zvolena metoda kodovani
+            method = self.encoding_method
+
+            # debug
+            print(f"vybrana metoda {method} pro kodovani..")
+
+            #pro kazdou metodu zavolej odpovidajici funkci kodovani
+            if (method == gv.COMBOBOX_METHOD_SHANNON):
+                # vybran shannon, zkontroluj jestli neexistuji predchozi vysledky
+                if self.shannon_complete:
+                    # shannon jiz byl proveden, nepocitej znovu
+                    # debug print
+                    print(f"\tjiz existuje vypocteny vysledek pro shannona\n")
+                else:
+                    self.encode_alphabet_shannon()
+            elif (method == gv.COMBOBOX_METHOD_HUFFMAN):
+                # opet kontrola existujicich vysledku
+                if self.huffman_complete:
+                    #debug print
+                    print(f"\tjiz existuje vypocteny vysledek pro huffmana\n")
+                else:
+                    self.encode_alphabed_huffman()
+            else:
+                #debug print
+                print("Nebyla vybrana zadna metoda kodovani vracim se z funkce.")
+                return
+            #debug
+            print(f"zakodovani metodou {method} probehlo ted by se mel zobrazit vysledek.\n")
 
         # tlacitko pro mod informaci o abecede
         modes_button_info = tk.Button(self.panel_modes,
@@ -248,6 +433,30 @@ class EffectiveCodeApp:
         modes_button_second.pack(side = tk.LEFT,
                                  padx = gv.BUTTON_BUFFER,
                                  pady = gv.BUTTON_BUFFER)
+        
+        # combobox pro vyber metody kodovani
+        self.encoding_method = None  # reset vybrane metody
+        modes_combobox_encoding_method_selection = ttk.Combobox(
+            self.panel_modes,
+            values = [gv.COMBOBOX_METHOD_HUFFMAN,
+                      gv.COMBOBOX_METHOD_SHANNON]
+        )
+        modes_combobox_encoding_method_selection.pack(side = tk.LEFT,
+                                                      padx = gv.BUTTON_BUFFER,
+                                                      pady = gv.BUTTON_BUFFER)
+        modes_combobox_encoding_method_selection.set(gv.COMBOBOX_PROMPT)
+        modes_combobox_encoding_method_selection.bind("<<ComboboxSelected>>",
+                                                      self.on_method_selected)
+        
+        modes_button_use_method = tk.Button(self.panel_modes,
+                                            text = "Použít kódování",
+                                            command = on_encode_button_click)
+        modes_button_use_method.pack(side = tk.LEFT,
+                                     padx = gv.BUTTON_BUFFER,
+                                     pady = gv.BUTTON_BUFFER)
+        
+        #debug
+        print(f"combobox obnovet, aktualni hodnota v nej: {self.encoding_method}.\n")
 
         
         # pri prvotni inicializaci aktivuj tlacitko pro info o abecede
@@ -296,9 +505,9 @@ class EffectiveCodeApp:
 
 
         # debug
-        print(f"\toriginal chars: {chars}\n"
-              f"\toriginal probs: {probs}\n"
-              f"\tcalc_probs: {self.calc_probabilities_list}\n")
+        #print(f"\toriginal chars: {chars}\n"
+        #      f"\toriginal probs: {probs}\n"
+        #      f"\tcalc_probs: {self.calc_probabilities_list}\n")
         
         # vypocet mnozstvi informace kterou nese kazdy znak (shannonova formule)
         self.calc_characters_information_list = [
@@ -313,10 +522,10 @@ class EffectiveCodeApp:
             self.calc_average_information_amount += prob * information_value        
         round(self.calc_average_information_amount, gv.NUM_OF_DECIMAL_PLACES)
         # debug
-        print("calc_ promenne:\n"
-              f"calc_probabilities_list: {self.calc_probabilities_list}\n"
-              f"calc_characters_information_list: {self.calc_characters_information_list}\n"
-              f"calc_average_information_amount: {self.calc_average_information_amount}\n")
+        #print("calc_ promenne:\n"
+        #      f"calc_probabilities_list: {self.calc_probabilities_list}\n"
+        #      f"calc_characters_information_list: {self.calc_characters_information_list}\n"
+        #      f"calc_average_information_amount: {self.calc_average_information_amount}\n")
         
         # zamezeni zvetseni panelu pro abecedu (dulezite) jinak se po pridani
         # labels nize panel rozsiri
