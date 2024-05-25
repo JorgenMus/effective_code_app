@@ -123,7 +123,9 @@ class EffectiveCodeApp:
         self.graphics_canvas.update_idletasks()
         self.graphics_canvas.configure(scrollregion = self.graphics_canvas.bbox("all"))
         self.graphics_canvas.config(yscrollcommand=self.v_scrollbar.set,
-                                    xscrollcommand=self.h_scrollbar.set)
+                                    yscrollincrement=1,
+                                    xscrollcommand=self.h_scrollbar.set,
+                                    xscrollincrement = 1)
         self.v_scrollbar.config(width = gv.SCROLLBAR_WIDTH)
         self.h_scrollbar.config(width = gv.SCROLLBAR_WIDTH)
         self.graphics_canvas.update_idletasks()
@@ -423,7 +425,7 @@ class EffectiveCodeApp:
         
         # overeni pravdepodobnosti
         try:
-            prob_sum = sum(probs)
+            prob_sum = round(sum(probs), gv.NUM_OF_DECIMAL_PLACES)
             for i, prob in enumerate(probs):
                 if prob > 100.0 or prob < 0.0:  # kontrola hodnoty (0.0-100.0)
                     messagebox.showerror("Chyba ve zdrojové abecedě",
@@ -432,7 +434,8 @@ class EffectiveCodeApp:
                     return False
             if prob_sum != 100.0:  # kontrola souctu pravdepodobnosti
                 messagebox.showerror("Chyba ve zdrojové abecedě",
-                                     "Součet pravděpodobností musí být roven"
+                                     "Součet pravděpodobností musí být (po "
+                                     "zaokrouhlení na 5 desetinných míst) roven"
                                      " 100.0 (tzn. 100 %), tato abeceda má součet "
                                      f"{prob_sum}%.")
                 return False
