@@ -53,23 +53,34 @@ class EffectiveCodeApp:
                                  fill=tk.BOTH,
                                  expand=True)
         # canvas do ktereho se vlozi zabalene informace ktere pujde posouvat po canvasu
-        self.graphics_canvas = tk.Canvas(self.panel_graphics)
-        self.graphics_canvas.pack(side = tk.BOTTOM,
+        self.graphics_canvas = tk.Canvas(self.panel_graphics,
+                                         scrollregion=(0, 0,
+                                                       gv.SCROLLBAR_HORIZONTAL_LIMIT,
+                                                       gv.SCROLLBAR_VERTICAL_LIMIT))        
+        # vytvoreni a nastaveni vertikalnich (v) a horizontalnich (h) scrollbaru
+        self.v_scrollbar = tk.Scrollbar(self.panel_graphics,
+                                        orient = tk.VERTICAL,
+                                        command = self.graphics_canvas.yview)
+        self.v_scrollbar.pack(side = tk.RIGHT, fill = tk.Y)
+        self.h_scrollbar = tk.Scrollbar(self.panel_graphics,
+                                        orient = tk.HORIZONTAL,
+                                        command = self.graphics_canvas.xview)
+        self.h_scrollbar.pack(side = tk.BOTTOM, fill = tk.X)    
+        self.graphics_canvas.pack(side = tk.TOP,
                                   fill = tk.BOTH,
                                   expand = True)
+        self.graphics_canvas.bind("<Configure>", self.on_graphics_canvas_configure)
+
         # zabalene informace pomoci tridy GraphicsView
         self.graphics_view = GraphicsView(self.graphics_canvas)
         self.graphics_canvas.create_window((gv.WINDOW_BUFFER, gv.WINDOW_BUFFER),
                                            window = self.graphics_view,
-                                           anchor = "center")
+                                           anchor = "center",
+                                           width = gv.SCROLLBAR_HORIZONTAL_LIMIT,
+                                           height = gv.SCROLLBAR_VERTICAL_LIMIT)
+        #self.graphics_view.bind("<Configure>", self.on_graphics_view_configure)
 
-        # binding udalosti pro posun obsahu
-        self.panel_graphics.bind("<Configure>", self.on_graphics_frame_config)
-        self.graphics_canvas.bind("<ButtonPress-1>",  # stisk tlacitka mysi
-                                 self.on_mouse_click, add = "+")
-        self.graphics_canvas.bind("<B1-Motion>",  # pohyb mysi pri stisknuti
-                                 self.on_mouse_movement)
-        
+
         # label pro panel abecedy
         self.label_alphabet = tk.Label(self.panel_alphabet,
                                        text="Zdrojová abeceda",
@@ -106,10 +117,23 @@ class EffectiveCodeApp:
         self.calc_characters_information_list = []
         self.calc_average_information_amount = 0
 
-    # event funkce konfigurace scrollreguinu grafickeho panelu
-    def on_graphics_frame_config(self, event):
-        """Pomocná funkce řeší event konfigurace grafickeho panelu."""
+    # event konfigurace canvasu
+    def on_graphics_canvas_configure(self, event):
+        """Funkce se stará o nastaveni scrollregionu a vycentrovani obsahu."""
+        self.graphics_canvas.update_idletasks()
         self.graphics_canvas.configure(scrollregion = self.graphics_canvas.bbox("all"))
+        self.graphics_canvas.config(yscrollcommand=self.v_scrollbar.set,
+                                    xscrollcommand=self.h_scrollbar.set)
+        self.v_scrollbar.config(width = gv.SCROLLBAR_WIDTH)
+        self.h_scrollbar.config(width = gv.SCROLLBAR_WIDTH)
+        self.graphics_canvas.update_idletasks()
+        
+        # pokud je neco v graphics_view vycentruj to
+        if self.graphics_view.winfo_children():
+            self.graphics_view.center_position()
+        else:
+            return
+
 
     # event funkce pri stisknu tlacitka mysi
     def on_mouse_click(self, event):
@@ -160,7 +184,7 @@ class EffectiveCodeApp:
         """Funkce vymaže obsah grafického panelu (widgets)."""
         #for widget in self.graphics_canvas.winfo_children():
         #    widget.destroy()
-        self.graphics_view.clear_frame()  # mel by byl jedinny menitelny obsah v canvasu
+        return  # prozatim nemusi mazat nic
 
     # Funkce vypise do panel_graphics informace o abecede
     def show_alphabet_info(self):
@@ -168,17 +192,14 @@ class EffectiveCodeApp:
         # nejdrive vycistit panel
         self.clear_panel_graphics()
         self.graphics_view.show_alphabet(self.calc_average_information_amount,
+                                         ["Znak", "Pravděpodobnost", "Množství informace"],
+                                         self.characters_list,
                                          self.calc_probabilities_list,
                                          self.calc_characters_information_list)
-        self.graphics_canvas.bind("<ButtonPress-1>",  # stisk tlacitka mysi
-                                 self.on_mouse_click, add = "+")
-        self.graphics_canvas.bind("<B1-Motion>",  # pohyb mysi pri stisknuti
-                                 self.on_mouse_movement)
-
     # debug test function (to be replaces later)
     def show_test_stuff(self):
         self.clear_panel_graphics()
-        self.graphics_view.show_test_info()
+        self.graphics_view.show_test_info()   
 
     # funkce pro vytvoreni tlacitek pro prepinani modu zobrazeni abecedy
     def create_modes_buttons(self):
@@ -268,10 +289,15 @@ class EffectiveCodeApp:
 
         # nastaveni calc_ promennych podle pouzite abecedy pro dalsi vypocty
         # prevod pravdepodobnosti do desetinneho zapisu procent (zaokrouhleno na 3 desetinna mista)
-        self.calc_probabilities_list = [round(prob / 100,
-                                              gv.NUM_OF_DECIMAL_PLACES)
-                                              for prob in probs]
+        self.calc_probabilities_list = [prob / 100.0
+                                         for prob in probs]
 
+
+        # debug
+        print(f"\toriginal chars: {chars}\n"
+              f"\toriginal probs: {probs}\n"
+              f"\tcalc_probs: {self.calc_probabilities_list}\n")
+        
         # vypocet mnozstvi informace kterou nese kazdy znak (shannonova formule)
         self.calc_characters_information_list = [
             round(-math.log2(prob),

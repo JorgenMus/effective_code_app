@@ -13,6 +13,8 @@ WINDOW_BUFFER = 20
 
 # scrollbar
 SCROLLBAR_VERTICAL_LIMIT = 5000
+SCROLLBAR_HORIZONTAL_LIMIT = 5000
+SCROLLBAR_WIDTH = 25
 
 # buffer pro labels
 LABEL_BUFFER_X = 10
@@ -44,7 +46,7 @@ MODE_TESTING = "TESTING"
 DRAG_MOVEMENT_SPEED = 1  # rychlost posouvani pro graficky panel
 
 # hodnoty pro matematicke operace
-NUM_OF_DECIMAL_PLACES = 3
+NUM_OF_DECIMAL_PLACES = 5
 
 # prace se soubory
 JSON_CHARACTERS_NAME = "characters"

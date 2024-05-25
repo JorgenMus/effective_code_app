@@ -16,12 +16,17 @@ class GraphicsView(tk.Frame):
         """Funkce vymaže veškerý obsah který má v tk.Frame uložený."""
         for slave in self.grid_slaves():
             slave.destroy()
+            self.grid_forget()
     
-    def show_alphabet(self, avg_info_value, *lists_of_values):
+    def show_alphabet(self, avg_info_value, column_names_list, *lists_of_values):
         """Funkce do vytvoří tabulku předaných údajů.
         1 předaný list = 1 sloupec dat v tabulce.
         Všechny předané listy hodnot musí mít stejnou délku, pokud nemají
-        bude do tabulky doplnena prázdná hodnota."""
+        bude do tabulky doplnena prázdná hodnota.
+        
+        avg_info_value - bude zobrazena v poslednim radku
+        comun_names_list - list nazvu pro sloupce
+        lists_of_values - listy hodnot pro jednotlive sloupce."""
         # nejdrive vymaz predchozi obsah
         self.clear_frame()
 
@@ -30,6 +35,15 @@ class GraphicsView(tk.Frame):
 
         # zjisteni nejdelsiho listu pro pripad ze nejaky predany list je kratsi
         max_list_length = max(len(list) for list in lists_of_values)
+
+        # do prvniho radku umistit predane nazvy sloupcu
+        for col, col_name in enumerate(column_names_list):
+            label = tk.Label(self, text = col_name,
+                             borderwidth = gv.LABEL_BORDER_WIDTH,
+                             relief = "solid")
+            label.grid(row = 0,
+                       column = col,
+                       sticky = "nsew")
 
         # prochazet se budou indexy pro nejdelsi list
         for row_index in range(max_list_length):  # row zastupuje dany element konkretnim listu
@@ -41,11 +55,15 @@ class GraphicsView(tk.Frame):
                 except IndexError:  # pokud list neni tak dlouhy dopln stringem
                     value = "prázdné"
                 
+                # v pripade cisel zaokrouhli na 5 mist pro hezci zobrazeni
+                if isinstance(value, (int, float)):
+                    value = round(value, gv.NUM_OF_DECIMAL_PLACES)
+
                 # vytvoreni label do tk.Frame
                 label = tk.Label(self, text = f"{value}",     
                                  borderwidth = gv.LABEL_BORDER_WIDTH,
                                  relief = "solid")
-                label.grid(row = row_index,
+                label.grid(row = row_index + 1,  # plus 1 kvuli prvni rade jmen sloupcu
                            column = col_index,
                            sticky = "nsew")
         
@@ -71,18 +89,34 @@ class GraphicsView(tk.Frame):
         test_label.grid(row = 0, column = 0, sticky = "nsew")
         self.center_position()
 
+        # debug
+        print(f"show_test_info after: grid size = {self.grid_size()}\n")
+
     def center_position(self):
         self.parent.update_idletasks()
         parent_width = self.parent.winfo_width()
         parent_height = self.parent.winfo_height()
         width = self.winfo_reqwidth()
         height = self.winfo_reqheight()
+
+        # pokud neni co centrovat preskoc
+        #if width <= 1 or height <= 1:
+        #    #debug print
+        #    print("\tskipping center function its irrelevant.\n")
+        #    return
+        
         new_x = (parent_width // 2) - (width // 2)
         new_y = (parent_height // 2) - (height // 2)
+        #self.parent.create_window((new_x + gv.WINDOW_BUFFER, new_y + gv.WINDOW_BUFFER),
+        #                          window = self,
+        #                          width = parent_width - (2 * gv.WINDOW_BUFFER),
+        #                          height = parent_height - (2 * gv.WINDOW_BUFFER),
+        #                          anchor = "center")
+        
+        # debug 2. pokus o center
         self.parent.create_window((new_x, new_y),
                                   window = self,
                                   anchor = "center")
-        
         #debug
         print(f"centruju pozici graphicsview:\n"
               f"\tparent width, height: ({parent_width}, {parent_height})\n"
