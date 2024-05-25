@@ -59,15 +59,15 @@ class EffectiveCodeApp:
                                   expand = True)
         # zabalene informace pomoci tridy GraphicsView
         self.graphics_view = GraphicsView(self.graphics_canvas)
-        self.graphics_canvas.create_window((0, 0),
+        self.graphics_canvas.create_window((gv.WINDOW_BUFFER, gv.WINDOW_BUFFER),
                                            window = self.graphics_view,
-                                           anchor = tk.CENTER)
+                                           anchor = "center")
 
         # binding udalosti pro posun obsahu
         self.panel_graphics.bind("<Configure>", self.on_graphics_frame_config)
-        self.graphics_view.bind("<ButtonPress-1>",  # stisk tlacitka mysi
-                                 self.on_mouse_click)
-        self.graphics_view.bind("<B1-Motion>",  # pohyb mysi pri stisknuti
+        self.graphics_canvas.bind("<ButtonPress-1>",  # stisk tlacitka mysi
+                                 self.on_mouse_click, add = "+")
+        self.graphics_canvas.bind("<B1-Motion>",  # pohyb mysi pri stisknuti
                                  self.on_mouse_movement)
         
         # label pro panel abecedy
@@ -130,7 +130,7 @@ class EffectiveCodeApp:
         x_amount = event.x - self.mouse_click_start_x
         y_amount = event.y - self.mouse_click_start_y
 
-        self.graphics_canvas.move(self.graphics_view, x_amount, y_amount)
+        self.graphics_canvas.move(tk.ALL, x_amount, y_amount)
         
         # aktualizovat souradnice pro pripadny dalsi event
         self.mouse_click_start_x = event.x
@@ -158,38 +158,27 @@ class EffectiveCodeApp:
     # funkce vymaze widgety v grafickem panelu a pripravi tak pro nove udaje
     def clear_panel_graphics(self):
         """Funkce vymaže obsah grafického panelu (widgets)."""
-        for widget in self.graphics_canvas.winfo_children():
-            widget.destroy()
+        #for widget in self.graphics_canvas.winfo_children():
+        #    widget.destroy()
+        self.graphics_view.clear_frame()  # mel by byl jedinny menitelny obsah v canvasu
 
     # Funkce vypise do panel_graphics informace o abecede
     def show_alphabet_info(self):
         """Funkce do grafického panelu vypíše informace o zdrojové abecedě."""
         # nejdrive vycistit panel
         self.clear_panel_graphics()
-        
-        # informace o abecede
-        txt = "informace o zdrojové abecedě:\n"
-        for char, prob in zip(self.characters_list, self.probabilities_list):
-            txt += f"{char}: {prob:.2f} %\n"
-
-        label_info = tk.Label(self.graphics_canvas,
-                              text = txt,
-                              justify = tk.LEFT)
-        label_info.pack(fill = tk.BOTH,
-                        expand = True)
-        
-        # bind udalosti pro kliknuti na zobrazene udaje pro pohyb mysi
-        label_info.bind("<ButtonPress-1>",  # stisk tlacitka mysi
-                        self.on_mouse_click)
-        label_info.bind("<B1-Motion>", self.on_mouse_movement)
+        self.graphics_view.show_alphabet(self.calc_average_information_amount,
+                                         self.calc_probabilities_list,
+                                         self.calc_characters_information_list)
+        self.graphics_canvas.bind("<ButtonPress-1>",  # stisk tlacitka mysi
+                                 self.on_mouse_click, add = "+")
+        self.graphics_canvas.bind("<B1-Motion>",  # pohyb mysi pri stisknuti
+                                 self.on_mouse_movement)
 
     # debug test function (to be replaces later)
     def show_test_stuff(self):
         self.clear_panel_graphics()
-        test_label = tk.Label(self.graphics_canvas,
-                              text = "TESTING MODE",
-                              bg = "pink")
-        test_label.pack(fill="both", expand=True)
+        self.graphics_view.show_test_info()
 
     # funkce pro vytvoreni tlacitek pro prepinani modu zobrazeni abecedy
     def create_modes_buttons(self):
