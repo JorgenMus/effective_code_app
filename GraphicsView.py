@@ -28,6 +28,14 @@ class GraphicsView(tk.Frame):
         avg_info_value - bude zobrazena v poslednim radku
         comun_names_list - list nazvu pro sloupce
         lists_of_values - listy hodnot pro jednotlive sloupce."""
+
+        # debug
+        print("Obdrzene hodnoty do show_alphabet:\n")
+        print(f"column_names_list:\n{column_names_list}\n")
+        print(f"bottom_data_list:\n{bottom_data_list}\n")
+        print(f"list_of_values:\n{lists_of_values}\n")
+        print(f"number of given data lists (eg. number of columns drawn): {len(lists_of_values)}")
+
         # nejdrive vymaz predchozi obsah
         self.clear_frame()
 
@@ -42,6 +50,8 @@ class GraphicsView(tk.Frame):
             label = tk.Label(self, text = col_name,
                              font = self.graphics_font,
                              borderwidth = gv.LABEL_BORDER_WIDTH,
+                             padx = gv.LABEL_BUFFER_X,
+                             pady = gv.LABEL_BUFFER_Y,
                              relief = "solid")
             label.grid(row = 0,
                        column = col,
@@ -65,6 +75,7 @@ class GraphicsView(tk.Frame):
                                  font = self.graphics_font, 
                                  borderwidth = gv.LABEL_BORDER_WIDTH,
                                  relief = "solid",
+                                 padx = gv.LABEL_BUFFER_X,
                                  anchor = "w")
                 label.grid(row = row_index + 1,  # plus 1 kvuli prvni rade jmen sloupcu
                            column = col_index,
@@ -76,35 +87,43 @@ class GraphicsView(tk.Frame):
             # aktualizace indexu row
             row_index = starting_row_index + i
 
+            # debug
+            print(f"zapisuju do row = {row_index} hodnoty {row_data[0]} a {row_data[1]}")
+
+
             # prvni label
             label_1 = tk.Label(self,
                                text = row_data[0],
+                               font = self.graphics_font,
                                borderwidth = gv.LABEL_BORDER_WIDTH,
                                relief = "solid",
+                               padx = gv.LABEL_BUFFER_X,
                                anchor = "w")
             label_1.grid(row = row_index,
                          column = 0,
-                         columnspan = num_of_lists // 2,
+                         columnspan = num_of_lists - 1,
                          sticky = "nsew")
             # druhy label
             label_2 = tk.Label(self,
                                text = row_data[1],
+                               font = self.graphics_font,
                                borderwidth = gv.LABEL_BORDER_WIDTH,
                                relief = "solid",
-                               anchor = "w")
+                               padx = gv.LABEL_BUFFER_X,
+                               pady = gv.LABEL_BUFFER_Y,
+                               anchor = "e")
             label_2.grid(row = row_index,
-                         column = num_of_lists // 2,
-                         columnspan = num_of_lists // 2,
+                         column = num_of_lists -1,
                          sticky = "nsew")
             
-        label_avg = tk.Label(self,
-                             text = "",
-                             font = self.graphics_font,
-                             borderwidth = gv.LABEL_BORDER_WIDTH,
-                             relief = "solid")
-        label_avg.grid(row = max_list_length + 1,
-                       column = 0,
-                       columnspan = num_of_lists, sticky = "nsew")
+        #label_avg = tk.Label(self,
+        #                     text = "",
+        #                     font = self.graphics_font,
+        #                     borderwidth = gv.LABEL_BORDER_WIDTH,
+        #                     relief = "solid")
+        #label_avg.grid(row = max_list_length + 1,
+        #               column = 0,
+        #               columnspan = num_of_lists, sticky = "nsew")
         
         # zabalit do okna s novou velikosti
         self.center_position()

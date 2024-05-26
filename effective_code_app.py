@@ -233,10 +233,19 @@ class EffectiveCodeApp:
         
         # list pro data zobrazene pod tabulkou
         bottom_data = [["Průměrná informační hodnota znaku",
-                        self.calc_average_information_amount]]
+                        round(self.calc_average_information_amount, 2)]]
         
         # extending column names strings
         extending_names = ["Kódové slovo"]
+
+        # pokud neni zvolena metoda vykresli abecedu normalne
+        if self.encoding_method not in [gv.COMBOBOX_METHOD_SHANNON,
+                                        gv.COMBOBOX_METHOD_HUFFMAN]:
+            self.graphics_view.show_alphabet(names_list,
+                                             bottom_data,
+                                             self.characters_list,
+                                             self.calc_probabilities_list,
+                                             self.calc_characters_information_list)
 
         # vyreseni zda ma uzivatel zvolenou metodu kodovani a zda jsou pritomny data
         match self.encoding_method:
@@ -254,12 +263,16 @@ class EffectiveCodeApp:
                                        self.shannon_code_effectivity]]
                     bottom_data.extend(extending_data)
 
+                    # debug
+                    print(f"pred volanim show_alphabet, hodnota v shannon_encoded_chars_list je:\n"
+                          f"{self.shannon_encoded_chars_list}")
                     # zavolej show_alphabet s udaji vcetne shannona
                     self.graphics_view.show_alphabet(names_list,
+                                                     bottom_data,
                                                      self.characters_list,
                                                      self.calc_probabilities_list,
                                                      self.calc_characters_information_list,
-                                                     self.encode_alphabet_shannon)
+                                                     self.shannon_encoded_chars_list)
 
             case gv.COMBOBOX_METHOD_HUFFMAN:
                 if self.huffman_complete:
@@ -271,12 +284,6 @@ class EffectiveCodeApp:
             case _:
                 print(f"Pokus o ukazani informaci o abecede s nedefinovanou metodou.\n")        
 
-        
-        self.graphics_view.show_alphabet(names_list,
-                                         bottom_data,
-                                         self.characters_list,
-                                         self.calc_probabilities_list,
-                                         self.calc_characters_information_list)
     # debug test function (to be replaces later)
     def show_test_stuff(self):
         self.clear_panel_graphics()
@@ -651,6 +658,7 @@ class EffectiveCodeApp:
         # dochazi ke zmene abecedy resetuj hodnoty pro vypocty
         self.reset_calc_values_shannon()
         self.reset_calc_values_huffman()
+        self.current_mode = None
 
         # ulozeni znaku a pravdepodobnosti do okna
         self.characters_list = chars
