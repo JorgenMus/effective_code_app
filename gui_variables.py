@@ -25,6 +25,10 @@ LABEL_BORDER_WIDTH = 1
 # buffer pro buttons
 BUTTON_BUFFER = 5
 
+# grid nastaveni
+GRID_HIGHLIGHT_THICKNESS = 5
+GRID_BUFFER = 10
+
 # barvy
 PANEL_MODES_BG = "#9AA2A3"  # gray
 PANEL_ALPHABET_BG = "#bbbfbf"  # gray-ish

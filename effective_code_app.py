@@ -53,31 +53,40 @@ class EffectiveCodeApp:
                                  fill=tk.BOTH,
                                  expand=True)
         # canvas do ktereho se vlozi zabalene informace ktere pujde posouvat po canvasu
-        self.graphics_canvas = tk.Canvas(self.panel_graphics,
-                                         scrollregion=(0, 0,
-                                                       gv.SCROLLBAR_HORIZONTAL_LIMIT,
-                                                       gv.SCROLLBAR_VERTICAL_LIMIT))        
+        self.graphics_canvas = tk.Canvas(self.panel_graphics)
+                                         #scrollregion=(0, 0,
+                                         #              gv.SCROLLBAR_HORIZONTAL_LIMIT,
+                                         #              gv.SCROLLBAR_VERTICAL_LIMIT))
+               
         # vytvoreni a nastaveni vertikalnich (v) a horizontalnich (h) scrollbaru
         self.v_scrollbar = tk.Scrollbar(self.panel_graphics,
                                         orient = tk.VERTICAL,
+                                        width = gv.SCROLLBAR_WIDTH,
                                         command = self.graphics_canvas.yview)
         self.v_scrollbar.pack(side = tk.RIGHT, fill = tk.Y)
         self.h_scrollbar = tk.Scrollbar(self.panel_graphics,
                                         orient = tk.HORIZONTAL,
+                                        width = gv.SCROLLBAR_WIDTH,
                                         command = self.graphics_canvas.xview)
-        self.h_scrollbar.pack(side = tk.BOTTOM, fill = tk.X)    
+        self.h_scrollbar.pack(side = tk.BOTTOM, fill = tk.X)
+
+        # nastaveni ovladani posunu scrollbarem a pack canvasu    
+        self.graphics_canvas.configure(xscrollcommand = self.h_scrollbar.set,
+                                       yscrollcommand = self.v_scrollbar.set)
         self.graphics_canvas.pack(side = tk.TOP,
                                   fill = tk.BOTH,
-                                  expand = True)
+                                  expand = True) 
+        
+        #self.graphics_canvas.pack(side = tk.TOP,
+        #                          fill = tk.BOTH,
+        #                          expand = True)
         self.graphics_canvas.bind("<Configure>", self.on_graphics_canvas_configure)
 
         # zabalene informace pomoci tridy GraphicsView
         self.graphics_view = GraphicsView(self.graphics_canvas)
-        self.graphics_canvas.create_window((gv.WINDOW_BUFFER, gv.WINDOW_BUFFER),
+        self.graphics_canvas.create_window((gv.GRID_BUFFER, gv.GRID_BUFFER),
                                            window = self.graphics_view,
-                                           anchor = "nw",
-                                           width = gv.SCROLLBAR_HORIZONTAL_LIMIT,
-                                           height = gv.SCROLLBAR_VERTICAL_LIMIT)
+                                           anchor = "nw")
         #self.graphics_view.bind("<Configure>", self.on_graphics_view_configure)
 
 
@@ -144,27 +153,12 @@ class EffectiveCodeApp:
     # event konfigurace canvasu
     def on_graphics_canvas_configure(self, event):
         """Funkce se stará o nastaveni scrollregionu a vycentrovani obsahu."""
-        self.graphics_canvas.update_idletasks()
-        self.graphics_canvas.configure(scrollregion = self.graphics_canvas.bbox("all"))
-        self.graphics_canvas.config(yscrollcommand=self.v_scrollbar.set,
-                                    yscrollincrement=1,
-                                    xscrollcommand=self.h_scrollbar.set,
-                                    xscrollincrement = 1)
-        #self.v_scrollbar.config(width = gv.SCROLLBAR_WIDTH)
-        #self.h_scrollbar.config(width = gv.SCROLLBAR_WIDTH)
 
-        # debug pokus o pohyb scrollbaru do jejich stredu
-        #ratio_x = 0.3
-        #ratio_y = 0.35
-        #self.graphics_canvas.yview_moveto(ratio_y)
-        #self.graphics_canvas.xview_moveto(ratio_x)
-        #self.graphics_canvas.update_idletasks()
-        
-        # pokud je neco v graphics_view vycentruj to
-        #if self.graphics_view.winfo_children():
-        #    self.graphics_view.center_position()
-        #else:
-        #    return
+        self.graphics_canvas.update_idletasks()
+        #self.graphics_canvas.config(scrollregion = self.graphics_canvas.bbox("all"))
+        self.v_scrollbar.config(width = gv.SCROLLBAR_WIDTH)
+        self.h_scrollbar.config(width = gv.SCROLLBAR_WIDTH)
+
 
 
     # event funkce pri stisknu tlacitka mysi
@@ -176,7 +170,7 @@ class EffectiveCodeApp:
         self.mouse_click_start_x = event.x
         self.mouse_click_start_y = event.y
 
-    #event funkce pri pohybu mysi
+    # event funkce pri pohybu mysi
     def on_mouse_movement(self, event):
         """Pomocná funkce řeší event pohybu myši."""
         #print(f"Canvas mouse movement at ({event.x}, {event.y})")  # debug
@@ -264,8 +258,8 @@ class EffectiveCodeApp:
                     bottom_data.extend(extending_data)
 
                     # debug
-                    print(f"pred volanim show_alphabet, hodnota v shannon_encoded_chars_list je:\n"
-                          f"{self.shannon_encoded_chars_list}")
+                    #print(f"pred volanim show_alphabet, hodnota v shannon_encoded_chars_list je:\n"
+                    #      f"{self.shannon_encoded_chars_list}")
                     # zavolej show_alphabet s udaji vcetne shannona
                     self.graphics_view.show_alphabet(names_list,
                                                      bottom_data,
@@ -320,12 +314,12 @@ class EffectiveCodeApp:
             # vrat list kodu obsahujici prazdny string ""
 
             #debug
-            print(f"\tshannon_recursive obdrzel typ>{type(probs_list)}<: {probs_list}\n"
-                  f"\tobdrzene kody: {codes}\n")
+            #print(f"\tshannon_recursive obdrzel typ>{type(probs_list)}<: {probs_list}\n"
+            #      f"\tobdrzene kody: {codes}\n")
 
             if len(probs_list) == 1:
                 # debug
-                print(f"\t\tlist s delkou jedna, vracim kod >> {prefix}")
+                #print(f"\t\tlist s delkou jedna, vracim kod >> {prefix}")
                 codes.append(prefix)
                 return codes
 
@@ -333,16 +327,16 @@ class EffectiveCodeApp:
             ones_list, zeros_list = split_list(probs_list)
 
             #debug
-            print(f"ones_list: {ones_list}, higher_list: {zeros_list}\n"
-                  f"volam na kazdy rekurzy")
+            #print(f"ones_list: {ones_list}, higher_list: {zeros_list}\n"
+            #      f"volam na kazdy rekurzy")
 
             # ziskani kodu pro oba listy - REKURZE
             codes = shannon_recursive(ones_list, codes, prefix + "1")
             codes = shannon_recursive(zeros_list, codes, prefix + "0")
 
             # debug
-            print(f"Výsledné kódy pro seznam: {probs_list} ->"
-                  f"{codes}\n")
+            #print(f"Výsledné kódy pro seznam: {probs_list} ->"
+            #      f"{codes}\n")
 
             return codes
 
@@ -356,7 +350,7 @@ class EffectiveCodeApp:
             -> ones_list, zeros_list."""
 
             #debug
-            print(f"\tsplitting list: {probs_list}...")
+            #print(f"\tsplitting list: {probs_list}...")
 
             ones_list = []
             zeros_list = []
@@ -365,8 +359,9 @@ class EffectiveCodeApp:
             if probs_list:
                 # pokud jsou v listu pouze 2 elementy, rozdel na 2 listy s 1 elementem
                 if len(probs_list) == 2:
-                    print(f"\t\tdelka probs_list je rovna 2 rozdeluji na 2 listy:\n"
-                          f"\t\tones_list: [{probs_list[0]}], zeros_list: [{probs_list[1]}]\n")
+                    # debug
+                    #print(f"\t\tdelka probs_list je rovna 2 rozdeluji na 2 listy:\n"
+                    #      f"\t\tones_list: [{probs_list[0]}], zeros_list: [{probs_list[1]}]\n")
                     return [probs_list[0]], [probs_list[1]]
 
                 # pokud je delsi pokracuj vypocty
@@ -378,7 +373,7 @@ class EffectiveCodeApp:
                     limit_sum = sum(probs_list) / 2
 
                     # debug
-                    print(f"\t\tlimit_sum = {limit_sum}")
+                    #print(f"\t\tlimit_sum = {limit_sum}")
 
                     # prubezna suma
                     cumulative_sum = 0.0
@@ -390,9 +385,10 @@ class EffectiveCodeApp:
                         # pokud dosavadni suma presahla limit zde se list rozdeli
                         if cumulative_sum > limit_sum:
                             # debug
-                            print(f"\t\toveruji ktera suma je lepsi: (cumul - limit) < (limit - previous_cumul):\n"
-                                  f"\t\t({cumulative_sum:.3f} - {limit_sum:.3f}) < ({limit_sum:.3f} - {(cumulative_sum - prob):.3f})\n"
-                                  f"\t\t{(cumulative_sum - limit_sum)} < {(limit_sum - (cumulative_sum - prob))} = {(cumulative_sum - limit_sum) < (limit_sum - (cumulative_sum - prob))}\n")
+                            #print(f"\t\toveruji ktera suma je lepsi: (cumul - limit) < (limit - previous_cumul):\n"
+                            #      f"\t\t({cumulative_sum:.3f} - {limit_sum:.3f}) < ({limit_sum:.3f} - {(cumulative_sum - prob):.3f})\n"
+                            #      f"\t\t{(cumulative_sum - limit_sum)} < {(limit_sum - (cumulative_sum - prob))} = {(cumulative_sum - limit_sum) < (limit_sum - (cumulative_sum - prob))}\n")
+                            
                             # pokud by dalsi index mel mensi rozdil sum pouzij ho taky
                             if (cumulative_sum - limit_sum) < (limit_sum - (cumulative_sum - prob)):
                                 index += 1
@@ -400,20 +396,21 @@ class EffectiveCodeApp:
                             break
                         
             #debug
-            print(f"\t\tnalezen index: {split_index}")
+            #print(f"\t\tnalezen index: {split_index}")
 
             # nalezen index rozdeleni, vloz hodnoty do 2 mensich listu
             ones_list = probs_list[:split_index]  # do indexu
             zeros_list = probs_list[split_index:]  # od index
 
-            print(f"\t\tlisty: {ones_list} and {zeros_list}")
+            # debug
+            #print(f"\t\tlisty: {ones_list} and {zeros_list}")
 
             # vrat 2 listy (pokud predany argument byl prazdny vrati se
             # 2 prazdne listy pri overeni na zacatku funkce, ale usetri se vypocty
             return ones_list, zeros_list
 
         # debug
-        print(f"spusteno kodovani podle shannona..\n")
+        #print(f"spusteno kodovani podle shannona..\n")
 
         # overeni ze byla vybrana metoda kodovani
         if self.encoding_method == None:
@@ -442,7 +439,7 @@ class EffectiveCodeApp:
         probs_list = [pair[1] for pair in sorted_values_descending]
 
         # debug
-        print(f"zistane probs ze serazeneho listu dvojic: {probs_list}\n")
+        #print(f"zistane probs ze serazeneho listu dvojic: {probs_list}\n")
 
         # vygenerovani kodovych slov
         codes_list = shannon_recursive(probs_list, codes_list)
@@ -470,7 +467,7 @@ class EffectiveCodeApp:
 
         # dopocitani ostatnich udaju vygenerovaneho kodu
         # vypocet prumerne delky kodoveho slova
-        number_of_symbols = len(self.characters_list)  # pocet ruznych symbolu
+        #number_of_symbols = len(self.characters_list)  # pocet ruznych symbolu
         average_length = 0
         for code_word, prob in zip(self.shannon_encoded_chars_list,
                                    self.calc_probabilities_list):

@@ -12,6 +12,39 @@ class GraphicsView(tk.Frame):
         super().__init__(parent)
         self.parent = parent
         self.graphics_font = (gv.FONT_UNIVERSAL, gv.FONT_SIZE)
+        #self.configure(highlightbackground = gv.BLACK_COLOR,
+        #               highlightcolor = gv.BLACK_COLOR,
+        #               highlightthickness = gv.GRID_HIGHLIGHT_THICKNESS)
+        parent.bind("<Configure>", self.on_configure)
+
+    # event handler
+    def on_configure(self, event):
+        self.adjust_frame_size()
+
+    # Funkce upravi rozmer frame na aktualni velikost gridu uvnitr
+    def adjust_frame_size(self):
+        """Funkce pro upravu rozmeru"""
+
+        # debug
+        print(f"adjusting frame size !!\nbefore update_idletasts\nbbox = {self.bbox('all')}\n")
+        # update udalosti (zmena rozmeru atd)
+        self.update_idletasks()
+
+        # vypocet nove width a height
+        bbox = self.bbox("all")
+
+        # pokud nejaky bounding-box (bbox) je, spocitej
+        if bbox:
+            #new_width = bbox[2] - bbox[0] + (2 * gv.GRID_BUFFER)
+            #new_height = bbox[3] - bbox[1] + (2 * gv.GRID_BUFFER)
+            new_width = bbox[2] - bbox[0]
+            new_height = bbox[3] - bbox[1]
+            self.config(width = new_width,
+                        height = new_height)
+        self.parent.config(scrollregion = self.parent.bbox("all"))
+
+        print(f"adjusting frame size !!\nfnc end\nbbox = {self.bbox('all')}\n")
+
 
     def clear_frame(self):
         """Funkce vymaže veškerý obsah který má v tk.Frame uložený."""
@@ -116,6 +149,9 @@ class GraphicsView(tk.Frame):
                          column = num_of_lists -1,
                          sticky = "nsew")
             
+        # updatuj velikost
+        self.adjust_frame_size()
+            
         #label_avg = tk.Label(self,
         #                     text = "",
         #                     font = self.graphics_font,
@@ -159,7 +195,3 @@ class GraphicsView(tk.Frame):
         self.parent.create_window((0, 0),
                                   window = self,
                                   anchor = "center")
-
-    def move_to(self, x, y):
-        # TODO
-        pass
