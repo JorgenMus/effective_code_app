@@ -225,8 +225,10 @@ class EffectiveCodeApp:
         """Funkce do grafického panelu vypíše informace o zdrojové abecedě."""
         # nejdrive vycistit panel
         self.clear_panel_graphics()
-        # sestaveni stringu pro prvni rade
 
+        # sestaveni ziskani nazvu tabulky pokud je zvolena nejaka metoda
+        
+        
         self.graphics_view.show_alphabet(self.calc_average_information_amount,
                                          ["Znak", "Pravděpodobnost (P [%])", "Množství informace [bitů]"],
                                          self.characters_list,
@@ -353,8 +355,6 @@ class EffectiveCodeApp:
         # debug
         print(f"spusteno kodovani podle shannona..\n")
 
-
-
         # overeni ze byla vybrana metoda kodovani
         if self.encoding_method == None:
             return False
@@ -422,30 +422,48 @@ class EffectiveCodeApp:
 
         # vypocet entropie zdroje
         source_entropy = 0
-        for prob in self.probabilities_list:
-            source_entropy += prob * math.log2(prob)
-        self.shannon_source_entropy = source_entropy
+        for prob in self.calc_probabilities_list:
+            source_entropy -= prob * math.log2(prob)  # zaporna suma
+        self.shannon_source_entropy = round(source_entropy, 3)
 
         # debug
         print(f"source entropy: {self.shannon_source_entropy}")
         
         # vypocet efektivity kodu
-        self.shannon_code_effectivity = 0.0  # TODO
+        code_effectivity = (source_entropy / average_length) * 100.0  # procent
+        self.shannon_code_effectivity = round(code_effectivity, 3)
 
-
+        # debug
+        print(f"code effectivity: {self.shannon_code_effectivity}")
 
         # hotovo oznac shannon metodu za vypocitanou
         self.shannon_complete = True
         
 
-    def encode_alphabed_huffman(self):
+    def encode_alphabet_huffman(self):
         print("spusteno kodovani podle huffmana..\n")
         pass
 
+    # placeholder debug pro budouci funkci ktera vykresli binarni strom
     def show_encoded_data(self):
         # TODO
         pass
 
+    def apply_mode(self, mode):
+        # podle modu zobraz pozadovane data do grafickeho panelu
+        match mode:
+            case gv.MODE_ALPHABET_INFORMATION:
+                self.show_alphabet_info()
+            case gv.MODE_TESTING:
+                self.show_test_stuff()
+            # TODO zde doplnit dalsi tlacitka co se pridaji do panelu modu
+            case None:
+                pass
+            case _:  # default
+                messagebox.showerror("Error módu",
+                                        "Pokus o spuštění módu ("
+                                        f"{str(mode)}) se nezdařil.")
+    
     # funkce pro vytvoreni tlacitek pro prepinani modu zobrazeni abecedy
     def create_modes_buttons(self):
         """Funkce vytvoří sadu tlačítek na panel nástrojů.
@@ -459,20 +477,11 @@ class EffectiveCodeApp:
             """Funkce nastaví aktuální mód a updatuje vzhled tlačítek."""
             self.current_mode = mode
             self.update_buttons_style(button)
+            
+            # aplikuj udalosti ktere maji ve vybranem modu nastat
+            self.apply_mode(mode)
 
-            # podle modu zobraz pozadovane data do grafickeho panelu
-            match mode:
-                case gv.MODE_ALPHABET_INFORMATION:
-                    self.show_alphabet_info()
-                case gv.MODE_TESTING:
-                    self.show_test_stuff()
-                # TODO zde doplnit dalsi tlacitka co se pridaji do panelu modu
-                case None:
-                    pass
-                case _:  # default
-                    messagebox.showerror("Error módu",
-                                         "Pokus o spuštění módu ("
-                                         f"{str(mode)}) se nezdařil.")
+
         # event kliknuti na button ktery pokud je vybrana metoda kodovani provede encode
         def on_encode_button_click():
             """Funkce řeší event kliknutí na tlačítko použití zvolené metody kódování."""
@@ -490,14 +499,18 @@ class EffectiveCodeApp:
                     # debug print
                     print(f"\tjiz existuje vypocteny vysledek pro shannona\n")
                 else:
+                    # pokud vysledky pro shannon nejsou dopocitej a updatuj zobrazeni
                     self.encode_alphabet_shannon()
+                self.apply_mode(self.current_mode)
             elif (method == gv.COMBOBOX_METHOD_HUFFMAN):
                 # opet kontrola existujicich vysledku
                 if self.huffman_complete:
                     #debug print
                     print(f"\tjiz existuje vypocteny vysledek pro huffmana\n")
                 else:
-                    self.encode_alphabed_huffman()
+                    # pokud neni huffman vypocitany proved vypocet
+                    self.encode_alphabet_huffman()
+                self.apply_mode(self.current_mode)
             else:
                 #debug print
                 print("Nebyla vybrana zadna metoda kodovani vracim se z funkce.")
