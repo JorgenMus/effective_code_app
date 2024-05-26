@@ -75,7 +75,7 @@ class EffectiveCodeApp:
         self.graphics_view = GraphicsView(self.graphics_canvas)
         self.graphics_canvas.create_window((gv.WINDOW_BUFFER, gv.WINDOW_BUFFER),
                                            window = self.graphics_view,
-                                           anchor = "center",
+                                           anchor = "nw",
                                            width = gv.SCROLLBAR_HORIZONTAL_LIMIT,
                                            height = gv.SCROLLBAR_VERTICAL_LIMIT)
         #self.graphics_view.bind("<Configure>", self.on_graphics_view_configure)
@@ -150,15 +150,15 @@ class EffectiveCodeApp:
                                     yscrollincrement=1,
                                     xscrollcommand=self.h_scrollbar.set,
                                     xscrollincrement = 1)
-        self.v_scrollbar.config(width = gv.SCROLLBAR_WIDTH)
-        self.h_scrollbar.config(width = gv.SCROLLBAR_WIDTH)
+        #self.v_scrollbar.config(width = gv.SCROLLBAR_WIDTH)
+        #self.h_scrollbar.config(width = gv.SCROLLBAR_WIDTH)
 
         # debug pokus o pohyb scrollbaru do jejich stredu
-        ratio_x = 0.3
-        ratio_y = 0.35
-        self.graphics_canvas.yview_moveto(ratio_y)
-        self.graphics_canvas.xview_moveto(ratio_x)
-        self.graphics_canvas.update_idletasks()
+        #ratio_x = 0.3
+        #ratio_y = 0.35
+        #self.graphics_canvas.yview_moveto(ratio_y)
+        #self.graphics_canvas.xview_moveto(ratio_x)
+        #self.graphics_canvas.update_idletasks()
         
         # pokud je neco v graphics_view vycentruj to
         #if self.graphics_view.winfo_children():
@@ -464,9 +464,9 @@ class EffectiveCodeApp:
         #    print(f"({char}, {code})\n")
 
         # debug
-        print(f"kodove slova ulozene v tomto poradi:\n")
-        for char, code_word in zip(self.characters_list, self.shannon_encoded_chars_list):
-            print(f"char: {char} || code: {code_word}")
+        #print(f"kodove slova ulozene v tomto poradi:\n")
+        #for char, code_word in zip(self.characters_list, self.shannon_encoded_chars_list):
+        #    print(f"char: {char} || code: {code_word}")
 
         # dopocitani ostatnich udaju vygenerovaneho kodu
         # vypocet prumerne delky kodoveho slova
@@ -477,7 +477,7 @@ class EffectiveCodeApp:
             average_length += len(code_word) * prob
         self.shannon_avg_codeword_length = round(average_length, 3)
 
-        print(f"agv code word length: {self.shannon_avg_codeword_length}")  # debug
+        #print(f"agv code word length: {self.shannon_avg_codeword_length}")  # debug
 
         # vypocet entropie zdroje
         source_entropy = 0
@@ -486,14 +486,14 @@ class EffectiveCodeApp:
         self.shannon_source_entropy = round(source_entropy, 3)
 
         # debug
-        print(f"source entropy: {self.shannon_source_entropy}")
+        #print(f"source entropy: {self.shannon_source_entropy}")
         
         # vypocet efektivity kodu
         code_effectivity = (source_entropy / average_length) * 100.0  # procent
         self.shannon_code_effectivity = round(code_effectivity, 3)
 
         # debug
-        print(f"code effectivity: {self.shannon_code_effectivity}")
+        #print(f"code effectivity: {self.shannon_code_effectivity}")
 
         # hotovo oznac shannon metodu za vypocitanou
         self.shannon_complete = True

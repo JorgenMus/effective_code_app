@@ -30,11 +30,11 @@ class GraphicsView(tk.Frame):
         lists_of_values - listy hodnot pro jednotlive sloupce."""
 
         # debug
-        print("Obdrzene hodnoty do show_alphabet:\n")
-        print(f"column_names_list:\n{column_names_list}\n")
-        print(f"bottom_data_list:\n{bottom_data_list}\n")
-        print(f"list_of_values:\n{lists_of_values}\n")
-        print(f"number of given data lists (eg. number of columns drawn): {len(lists_of_values)}")
+        #print("Obdrzene hodnoty do show_alphabet:\n")
+        #print(f"column_names_list:\n{column_names_list}\n")
+        #print(f"bottom_data_list:\n{bottom_data_list}\n")
+        #print(f"list_of_values:\n{lists_of_values}\n")
+        #print(f"number of given data lists (eg. number of columns drawn): {len(lists_of_values)}")
 
         # nejdrive vymaz predchozi obsah
         self.clear_frame()
@@ -88,7 +88,7 @@ class GraphicsView(tk.Frame):
             row_index = starting_row_index + i
 
             # debug
-            print(f"zapisuju do row = {row_index} hodnoty {row_data[0]} a {row_data[1]}")
+            #print(f"zapisuju do row = {row_index} hodnoty {row_data[0]} a {row_data[1]}")
 
 
             # prvni label
@@ -126,7 +126,7 @@ class GraphicsView(tk.Frame):
         #               columnspan = num_of_lists, sticky = "nsew")
         
         # zabalit do okna s novou velikosti
-        self.center_position()
+        #self.center_position()
 
     def show_test_info(self):
         self.clear_frame()
@@ -136,7 +136,7 @@ class GraphicsView(tk.Frame):
                               borderwidth=gv.LABEL_BORDER_WIDTH,
                               relief="solid")
         test_label.grid(row = 0, column = 0, sticky = "nsew")
-        self.center_position()
+        #self.center_position()
 
         # debug
         #print(f"show_test_info after: grid size = {self.grid_size()}\n")
