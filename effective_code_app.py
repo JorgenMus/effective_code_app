@@ -411,14 +411,28 @@ class EffectiveCodeApp:
 
         # dopocitani ostatnich udaju vygenerovaneho kodu
         # vypocet prumerne delky kodoveho slova
+        number_of_symbols = len(self.characters_list)  # pocet ruznych symbolu
+        average_length = 0
+        for code_word, prob in zip(self.shannon_encoded_chars_list,
+                                   self.calc_probabilities_list):
+            average_length += len(code_word) * prob
+        self.shannon_avg_codeword_length = round(average_length, 3)
 
-        self.shannon_avg_codeword_length = 0  # TODO
+        print(f"agv code word length: {self.shannon_avg_codeword_length}")  # debug
+
+        # vypocet entropie zdroje
+        source_entropy = 0
+        for prob in self.probabilities_list:
+            source_entropy += prob * math.log2(prob)
+        self.shannon_source_entropy = source_entropy
+
+        # debug
+        print(f"source entropy: {self.shannon_source_entropy}")
         
         # vypocet efektivity kodu
         self.shannon_code_effectivity = 0.0  # TODO
 
-        # vypocet entropie zdroje
-        self.shannon_source_entropy = 0.0  # TODO
+
 
         # hotovo oznac shannon metodu za vypocitanou
         self.shannon_complete = True
