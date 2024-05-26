@@ -225,6 +225,8 @@ class EffectiveCodeApp:
         """Funkce do grafického panelu vypíše informace o zdrojové abecedě."""
         # nejdrive vycistit panel
         self.clear_panel_graphics()
+        # sestaveni stringu pro prvni rade
+
         self.graphics_view.show_alphabet(self.calc_average_information_amount,
                                          ["Znak", "Pravděpodobnost (P [%])", "Množství informace [bitů]"],
                                          self.characters_list,
@@ -234,11 +236,119 @@ class EffectiveCodeApp:
     def show_test_stuff(self):
         self.clear_panel_graphics()
         self.graphics_view.show_test_info()   
+    
+    # pomocna funcke resetuje hodnoty pouzivane pri kodovani
+    def reset_calc_values_shannon(self):
+        """Funkce resetuje proměnné (calc) pouzivane shannonem"""
+        self.shannon_encoded_chars_list = []
+        self.shannon_avg_codeword_length = 0
+        self.shannon_code_effectivity = 0.0
+        self.shannon_source_entropy = 0.0
 
     # kodovani zdrojove abecedy pomoci metody shannon-fanovy
     def encode_alphabet_shannon(self):
         """Funkce použije Shannon-fanovu metodu kódování na zdrojovou abecedu."""
 
+        #print(f"listy serazene:\n{sorted_values_descending}\n")  # debug print
+        #print(f"listy serazenych hodnot:\nchars:\n{chars_sorted}\nprobs:\n{probs_sorted}\n")  #debug print
+
+        def shannon_recursive(probs_list, codes, prefix = ""):
+            """Očekává serazeny list pravdepodobnosti sestupne."""
+            # pokud predany list pravdepodobnosti nema alespon 2 elementy (2 pravdepodobnosti)
+            # vrat list kodu obsahujici prazdny string ""
+
+            #debug
+            print(f"\tshannon_recursive obdrzel typ>{type(probs_list)}<: {probs_list}\n"
+                  f"\tobdrzene kody: {codes}\n")
+
+            if len(probs_list) == 1:
+                # debug
+                print(f"\t\tlist s delkou jedna, vracim kod >> {prefix}")
+                codes.append(prefix)
+                return codes
+
+            # rozdel predany list na 2 listy s co nejblizsi sumou pravdepodobnosti
+            ones_list, zeros_list = split_list(probs_list)
+
+            #debug
+            print(f"ones_list: {ones_list}, higher_list: {zeros_list}\n"
+                  f"volam na kazdy rekurzy")
+
+            # ziskani kodu pro oba listy - REKURZE
+            codes = shannon_recursive(ones_list, codes, prefix + "1")
+            codes = shannon_recursive(zeros_list, codes, prefix + "0")
+
+            # debug
+            print(f"Výsledné kódy pro seznam: {probs_list} ->"
+                  f"{codes}\n")
+
+            return codes
+
+        # pomocna funkce pro rozdeleni na 2 listy podle sum
+        def split_list(probs_list):
+            """Pomocná funkce rozdělí předaný list dvojic na 2 mensi listy.
+
+            Očekává serazeny list pravdepodobnosti
+            - např. [0.30, 0.25, 0.11, ... ]
+            Vrací dva listy pravdepodobnosti s co nejblizsi sumou
+            -> ones_list, zeros_list."""
+
+            #debug
+            print(f"\tsplitting list: {probs_list}...")
+
+            ones_list = []
+            zeros_list = []
+
+            # pokud predany list neni prazdny proved vypocty
+            if probs_list:
+                # pokud jsou v listu pouze 2 elementy, rozdel na 2 listy s 1 elementem
+                if len(probs_list) == 2:
+                    print(f"\t\tdelka probs_list je rovna 2 rozdeluji na 2 listy:\n"
+                          f"\t\tones_list: [{probs_list[0]}], zeros_list: [{probs_list[1]}]\n")
+                    return [probs_list[0]], [probs_list[1]]
+
+                # pokud je delsi pokracuj vypocty
+                else: 
+                    # index prvku ktery je poslednim prvkem horniho listu
+                    split_index = 0
+                    # polovina souctu pravdepodobnosti
+                    # - limit pro sumu ones_list
+                    limit_sum = sum(probs_list) / 2
+
+                    # debug
+                    print(f"\t\tlimit_sum = {limit_sum}")
+
+                    # prubezna suma
+                    cumulative_sum = 0.0
+
+                    # smycka postupne scita pravdepodobnosti a hleda kde rozdelit list
+                    for index, prob in enumerate(probs_list):
+                        # ukonci loop pokud by suma prekrocila limit
+                        cumulative_sum += prob
+                        # pokud dosavadni suma presahla limit zde se list rozdeli
+                        if cumulative_sum > limit_sum:
+                            # debug
+                            print(f"\t\toveruji ktera suma je lepsi: (cumul - limit) < (limit - previous_cumul):\n"
+                                  f"\t\t({cumulative_sum:.3f} - {limit_sum:.3f}) < ({limit_sum:.3f} - {(cumulative_sum - prob):.3f})\n"
+                                  f"\t\t{(cumulative_sum - limit_sum)} < {(limit_sum - (cumulative_sum - prob))} = {(cumulative_sum - limit_sum) < (limit_sum - (cumulative_sum - prob))}\n")
+                            # pokud by dalsi index mel mensi rozdil sum pouzij ho taky
+                            if (cumulative_sum - limit_sum) < (limit_sum - (cumulative_sum - prob)):
+                                index += 1
+                            split_index = index
+                            break
+                        
+            #debug
+            print(f"\t\tnalezen index: {split_index}")
+
+            # nalezen index rozdeleni, vloz hodnoty do 2 mensich listu
+            ones_list = probs_list[:split_index]  # do indexu
+            zeros_list = probs_list[split_index:]  # od index
+
+            print(f"\t\tlisty: {ones_list} and {zeros_list}")
+
+            # vrat 2 listy (pokud predany argument byl prazdny vrati se
+            # 2 prazdne listy pri overeni na zacatku funkce, ale usetri se vypocty
+            return ones_list, zeros_list
 
         # debug
         print(f"spusteno kodovani podle shannona..\n")
@@ -255,99 +365,64 @@ class EffectiveCodeApp:
 
         # reset hodnot
         self.shannon_complete = False
-        self.shannon_encoded_chars_list = []
-        self.shannon_avg_codeword_length = 0
-        self.shannon_code_effectivity = 0.0
-        self.shannon_source_entropy = 0.0
+        self.reset_calc_values_shannon()
 
         #do teto promenne se ulozi list hodnot (kodu)
-        codes_list = [''] * len(self.calc_probabilities_list)
+        codes_list = []
 
         # algoritmus
-        # 1. serazeni podle pravdepodobnosti sestupne
-
-        # list dvojic (char, prob) - napr (('a', 0.2), ('b', 0.23),...)
+        # list dvojic [char, prob] - napr [['a', 0.2], ['b', 0.23],...]
+        # pro budouci namapovani kodovych slov do puvodniho poradi
         paired_values = list(zip(self.characters_list, self.calc_probabilities_list))
         sorted_values_descending = sorted(paired_values,
                                           key = lambda x: x[1],  # podle 2. prvku (prob)
                                           reverse = True)  # descending order
-        #print(f"listy serazene:\n{sorted_values_descending}\n")  # debug print
-        #print(f"listy serazenych hodnot:\nchars:\n{chars_sorted}\nprobs:\n{probs_sorted}\n")  #debug print
+        
+        # vytazeni listu pravdepodobnosti pro shannon_recursive funkci
+        # v serazenem (sestupne) listu
+        probs_list = [pair[1] for pair in sorted_values_descending]
 
-        # prvotni rozdeleni na 2 poloviny podle sumy (horni "polovina" vyssich
-        # hodnot pravdepodobnosti pokud mozno neprekroci sumu spodni "poloviny")
-        def shannon_recursive(pairs_char_prob_list):
-            """
-            Očekává serazeny list dvojic (char, prob)
-            - např. [['a', 0.2], ['b', 0.25], ['c', 0.05],...]
-            vraci list kodu pro predany list
-            -> ["001", "011",...]."""
-            # pokud predany list nema alespon 2 listy dvojic [char, prob] vrat prazdny list kodu
-            if len(pairs_char_prob_list) <= 1:
-                return []
+        # debug
+        print(f"zistane probs ze serazeneho listu dvojic: {probs_list}\n")
 
-            # rozdel predany list na 2 mensi posdle sumy
-            lower_sum_list, higher_sum_list = split_list(pairs_char_prob_list)
+        # vygenerovani kodovych slov
+        codes_list = shannon_recursive(probs_list, codes_list)
 
-            #debug
-            print(f"lower_list: {lower_sum_list}, higher_list: {higher_sum_list}\n"
-                  f"volam na kazdy rekurzy")
-            # ziskani kodu pro oba listy - REKURZE
-            codes_low_sum_list = shannon_recursive(lower_sum_list)
-            codes_higher_sum_list = shannon_recursive(higher_sum_list)
+        # namapovani kodovych slov ve spravnem poradi do promenne tridy
+        for i, orig_char in enumerate(self.characters_list):
+            # najdi na kterem indexu je v serazenem listu dvojic [char,prob]
+            # znak z originalne ulozeneho listu znaku kodove kabecedy
+            # nalezeny index bude zaroven index odpovidajiciho kodoveho slova
+            # z listu codes_list
+            code_word_index = [item[0] for item in sorted_values_descending].index(orig_char)
 
-            print(f"Výsledné kódy pro seznam: {pairs_char_prob_list}")  # debug
-            # pridani prefix '1' kodum ze seznamu s mensi sumou
-            for char, prob in lower_sum_list:
-                pass
+            # uloz kodove slovo
+            self.shannon_encoded_chars_list.append(codes_list[code_word_index])
+        
+        # debug
+        #print(f"shannonuv algoritmus hotovo...\nnalezene kodove slova pro znaky:\n")
+        #for (char, _), code in zip(sorted_values_descending, codes_list):
+        #    print(f"({char}, {code})\n")
 
-        # pomocna funkce pro rozdeleni na 2 listy podle sum
-        def split_list(pairs_char_prob_list):
-            """Pomocná funkce rozdělí předaný list dvojic na 2 mensi listy.
+        # debug
+        print(f"kodove slova ulozene v tomto poradi:\n")
+        for char, code_word in zip(self.characters_list, self.shannon_encoded_chars_list):
+            print(f"char: {char} || code: {code_word}")
 
-            Očekává serazeny list dvojic (char, prob)
-            - např. [['a', 0.2], ['b', 0.25], ['c', 0.05],...]
-            Vrací dva listy dvojic(char, prob):
-            -> lower_sum_list, higher_sum_list."""
+        # dopocitani ostatnich udaju vygenerovaneho kodu
+        # vypocet prumerne delky kodoveho slova
 
-            #debug
-            print(f"\tsplitting list: {pairs_char_prob_list}...")
-            lower_sum_list = []
-            higher_sum_list = []
-            # pokud predany list paru neni prazdny proved vypocty
-            if pairs_char_prob_list:
-                # polovina souctu pravdepodobnosti
-                # - limit pro sumu horniho listu (lower_sum_list)
-                limit_sum = sum(pair[1] for pair in pairs_char_prob_list) / 2
+        self.shannon_avg_codeword_length = 0  # TODO
+        
+        # vypocet efektivity kodu
+        self.shannon_code_effectivity = 0.0  # TODO
 
-                # debug
-                print(f"\t\tlimit_sum = {limit_sum}")
-                # prubezna suma
-                cumulative_sum = 0.0
-                # index prvku ktery je poslednim prvkem horniho listu
-                split_index = 0
-                # smycka postupne scita pravdepodobnosti a hleda kde rozdelit list
-                for index, (_, prob) in enumerate(pairs_char_prob_list):  # vytazeni prob
-                    # ukonci loop pokud by suma prekrocila limit
-                    cumulative_sum += prob
-                    # pokud dosavadni suma presahla limit zde se list rozdeli
-                    if cumulative_sum > limit_sum:
-                        split_index = index
-                        break
-                    
-                #debug
-                print(f"\t\tnalezen index: {split_index}")
-                # nalezen index rozdeleni, vloz hodnoty do 2 mensich listu
-                lower_sum_list = pairs_char_prob_list[:split_index]  # do indexu
-                higher_sum_list = pairs_char_prob_list[split_index:]  # od index
+        # vypocet entropie zdroje
+        self.shannon_source_entropy = 0.0  # TODO
 
-                print(f"\t\tlisty: {lower_sum_list} and {higher_sum_list}")
-            # vrat 2 listy (pokud predany argument byl prazdny vrati se
-            # 2 prazdne listy hned po jejich inicializaci, ale usetri se vypocty)
-            return lower_sum_list, higher_sum_list
-
-        # kodovani hotovo 
+        # hotovo oznac shannon metodu za vypocitanou
         self.shannon_complete = True
+        
 
     def encode_alphabed_huffman(self):
         print("spusteno kodovani podle huffmana..\n")
