@@ -227,10 +227,53 @@ class EffectiveCodeApp:
         self.clear_panel_graphics()
 
         # sestaveni ziskani nazvu tabulky pokud je zvolena nejaka metoda
+        names_list = ["Znak",
+                      "Pravděpodobnost (P [%])",
+                      "Množství informace [bitů]"]
         
+        # list pro data zobrazene pod tabulkou
+        bottom_data = [["Průměrná informační hodnota znaku",
+                        self.calc_average_information_amount]]
         
-        self.graphics_view.show_alphabet(self.calc_average_information_amount,
-                                         ["Znak", "Pravděpodobnost (P [%])", "Množství informace [bitů]"],
+        # extending column names strings
+        extending_names = ["Kódové slovo"]
+
+        # vyreseni zda ma uzivatel zvolenou metodu kodovani a zda jsou pritomny data
+        match self.encoding_method:
+            # pridani dat pokud je zvolena metoda shannon-fano
+            case gv.COMBOBOX_METHOD_SHANNON:
+                if self.shannon_complete:
+                    # rozsir o dalsi nazvy sloupcu
+                    names_list.extend(extending_names)
+                    # pridej udaje o kodovani do dat pod tabulkou
+                    extending_data = [["Průměrná délka kódového slova",
+                                       self.shannon_avg_codeword_length],
+                                      ["Entropie zdroje",
+                                       self.shannon_source_entropy],
+                                      ["Efektivita kódu",
+                                       self.shannon_code_effectivity]]
+                    bottom_data.extend(extending_data)
+
+                    # zavolej show_alphabet s udaji vcetne shannona
+                    self.graphics_view.show_alphabet(names_list,
+                                                     self.characters_list,
+                                                     self.calc_probabilities_list,
+                                                     self.calc_characters_information_list,
+                                                     self.encode_alphabet_shannon)
+
+            case gv.COMBOBOX_METHOD_HUFFMAN:
+                if self.huffman_complete:
+                    # debug
+                    print(f"ukazani abecedy s vybranym huffmanem a hotovym huffmanam"
+                          "nyni by se meli ukazat udaje s huffmanovym kodovanim.")
+                    pass
+            # default moznost
+            case _:
+                print(f"Pokus o ukazani informaci o abecede s nedefinovanou metodou.\n")        
+
+        
+        self.graphics_view.show_alphabet(names_list,
+                                         bottom_data,
                                          self.characters_list,
                                          self.calc_probabilities_list,
                                          self.calc_characters_information_list)
@@ -241,11 +284,21 @@ class EffectiveCodeApp:
     
     # pomocna funcke resetuje hodnoty pouzivane pri kodovani
     def reset_calc_values_shannon(self):
-        """Funkce resetuje proměnné (calc) pouzivane shannonem"""
+        """Funkce resetuje proměnné (calc) používané shannonem."""
         self.shannon_encoded_chars_list = []
         self.shannon_avg_codeword_length = 0
         self.shannon_code_effectivity = 0.0
         self.shannon_source_entropy = 0.0
+        self.shannon_complete = False
+
+    # pomocna funkce resetuje hodnoty pro vypocty
+    def reset_calc_values_huffman(self):
+        """Funkce resetuje proměnné (calc) používané huffmanem."""
+        self.huffman_encoded_chars_list = []
+        self.huffman_avg_codeword_length = 0
+        self.huffman_code_effectivity = 0.0
+        self.huffman_source_entropy = 0.0
+        self.huffman_complete = False
 
     # kodovani zdrojove abecedy pomoci metody shannon-fanovy
     def encode_alphabet_shannon(self):
@@ -364,7 +417,6 @@ class EffectiveCodeApp:
             return False
 
         # reset hodnot
-        self.shannon_complete = False
         self.reset_calc_values_shannon()
 
         #do teto promenne se ulozi list hodnot (kodu)
@@ -596,6 +648,10 @@ class EffectiveCodeApp:
         předchoží abecedu pomoci winfo_children() funkce, která vrací
         pouze přímé potomky uložené v panel_alphabet, které smaže,
         pokud nejsou označeny jako permanentní."""
+        # dochazi ke zmene abecedy resetuj hodnoty pro vypocty
+        self.reset_calc_values_shannon()
+        self.reset_calc_values_huffman()
+
         # ulozeni znaku a pravdepodobnosti do okna
         self.characters_list = chars
         self.probabilities_list = probs
@@ -646,6 +702,31 @@ class EffectiveCodeApp:
 
         def create_alphabet_widgets():
             """Pomocná funkce do panelu abecedy vytvoří potřebné widgety."""
+            # overeni provedeni zmen v abecede
+            def is_alphabet_different(chars, probs):
+                """Funkce ověří zda je předaná abeceda odlišná od uložené.
+                
+                vrací True pokud předané listy chars a probs jsou rozdílné od uložené
+                jinak vrací False."""
+                # over delky listu
+                if ((len(chars) != len(self.characters_list)) or
+                    (len(probs) != len(self.probabilities_list))):
+                    # rozdilna delka, zmena provedena
+                    return True
+                
+                # porovnani listu znaku s temi ulozenymi
+                for new_char, orig_char in zip(chars, self.characters_list):
+                    if new_char != orig_char:
+                        return True
+                
+                # porovnani listu pravdepodobnosti
+                for new_prob, orig_prob in zip(probs, self.probabilities_list):
+                    if new_prob != orig_prob:
+                        return True
+
+                # abecena neni rozdilna od ulozene vrat False
+                return False
+
             # pridani button pro editaci abecedy pod existujici widgety
             def on_button_edit_click(event=None):
                 """Pomocná funkce reší event kliknutí na tlačítko pro editaci abecedy."""
@@ -653,10 +734,16 @@ class EffectiveCodeApp:
                                                              self.characters_list,
                                                              self.probabilities_list,
                                                              self.root)
-                # validace po editace, pokud je editace platna pouzij novou
+                # validace po editaci, pokud je editace platna pouzij novou
                 if chars and probs:
-                    if self.is_alphabet_valid(chars, probs):
-                        self.use_alphabet(chars, probs)
+                    # kontrola zda doslo ke zmene
+                    if is_alphabet_different(chars, probs):
+                        # pokud je abeceda jina validuj ji a pouzij
+                        if self.is_alphabet_valid(chars, probs):
+                            self.use_alphabet(chars, probs)
+                    # jinak neni potreba provadet zadne zmeny
+                    else:
+                        return
                 else:
                     return
                 

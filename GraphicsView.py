@@ -19,7 +19,7 @@ class GraphicsView(tk.Frame):
             slave.destroy()
             self.grid_forget()
     
-    def show_alphabet(self, avg_info_value, column_names_list, *lists_of_values):
+    def show_alphabet(self, column_names_list, bottom_data_list, *lists_of_values):
         """Funkce do vytvoří tabulku předaných údajů.
         1 předaný list = 1 sloupec dat v tabulce.
         Všechny předané listy hodnot musí mít stejnou délku, pokud nemají
@@ -35,7 +35,7 @@ class GraphicsView(tk.Frame):
         num_of_lists = len(lists_of_values)
 
         # zjisteni nejdelsiho listu pro pripad ze nejaky predany list je kratsi
-        max_list_length = max(len(list) for list in lists_of_values)
+        max_list_length = max(len(data_list) for data_list in lists_of_values)
 
         # do prvniho radku umistit predane nazvy sloupcu
         for col, col_name in enumerate(column_names_list):
@@ -47,16 +47,12 @@ class GraphicsView(tk.Frame):
                        column = col,
                        sticky = "nsew")
         # kazdemu listu se priradi jeho index (col) a projdou se vsechny listy
-        for col_index, list in enumerate(lists_of_values):
+        for col_index, data_list in enumerate(lists_of_values):
             # prochazet se budou indexy (pro row) pro nejdelsi list
             for row_index in range(max_list_length):
-        # prochazet se budou indexy pro nejdelsi list
-        #for row_index in range(max_list_length):  # row zastupuje dany element konkretnim listu
-            # kazdemu listu se priradi jeho index (col) a projdou se vsechny listy
-        #    for col_index, list in enumerate(lists_of_values):  # enumerate >> (number, list)
                 # try-except blok zkusi vlozit hodnotu pod indexem
                 try:
-                    value = list[row_index]  # kazdy element z listu na svuj radek
+                    value = data_list[row_index]  # kazdy element z listu na svuj radek
                 except IndexError:  # pokud list neni tak dlouhy dopln stringem
                     value = "prázdné"
                 
@@ -74,9 +70,35 @@ class GraphicsView(tk.Frame):
                            column = col_index,
                            sticky = "nsew")
         
-        # pod posledni vytvoreny radek pridej label pro avg_info_value
+        # pod posledni vytvoreny radek pridej data z bottom_dala_list
+        starting_row_index = max_list_length + 1  # zacinajici radek pro bottom data
+        for i, row_data in enumerate(bottom_data_list):
+            # aktualizace indexu row
+            row_index = starting_row_index + i
+
+            # prvni label
+            label_1 = tk.Label(self,
+                               text = row_data[0],
+                               borderwidth = gv.LABEL_BORDER_WIDTH,
+                               relief = "solid",
+                               anchor = "w")
+            label_1.grid(row = row_index,
+                         column = 0,
+                         columnspan = num_of_lists // 2,
+                         sticky = "nsew")
+            # druhy label
+            label_2 = tk.Label(self,
+                               text = row_data[1],
+                               borderwidth = gv.LABEL_BORDER_WIDTH,
+                               relief = "solid",
+                               anchor = "w")
+            label_2.grid(row = row_index,
+                         column = num_of_lists // 2,
+                         columnspan = num_of_lists // 2,
+                         sticky = "nsew")
+            
         label_avg = tk.Label(self,
-                             text = f"Průměrná informační hodnota znaku: {avg_info_value} bitů.",
+                             text = "",
                              font = self.graphics_font,
                              borderwidth = gv.LABEL_BORDER_WIDTH,
                              relief = "solid")
