@@ -1,5 +1,6 @@
 """Tento soubor obsahuje konstanty a nastaveni pouzite pro GUI aplikace."""
 
+
 # rozmery panelu
 PANEL_MODES_HEIGHT = 35
 PANEL_ALPHABET_WIDTH = 200
@@ -65,8 +66,16 @@ PERMANENT_TAG_STRING = "permanent"
 # snad univerzalni font pro text
 FONT_UNIVERSAL = "Arial"
 FONT_SIZE = 14
+FONT_EQUATIONS = 20
 
 # hodnoty pro combobox selekci metod
 COMBOBOX_METHOD_SHANNON = "Shannon-Fanova"
 COMBOBOX_METHOD_HUFFMAN = "Huffmanova"
 COMBOBOX_PROMPT = "Vybrat metodu kódování"
+
+# nazvy vzorcu pro vypocty
+EQ_NAME_AVG_INFO_VALUE = "AVG_INFORMATION_VALUE"
+EQ_NAME_AVG_CODEWORD_LEN = "AVG_CODEWORD_LENGTH"
+EQ_NAME_SOURCE_ENTROPY = "SOURCE_ENTROPY"
+EQ_NAME_CODE_EFFECTIVITY = "CODE_EFFECTIVITY"
+EQ_NAME_KRAFT_MCMILLAN_INEQUALITY = "KRAFT_MCMILLAN_INEQUALITY"

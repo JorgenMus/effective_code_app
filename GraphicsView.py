@@ -4,6 +4,7 @@ GraphicsView dědí z třídy tk.Frame a zabaluje do sebe předané"""
 
 import tkinter as tk
 import gui_variables as gv
+from EquationsManager import EquationsManager
 
 class GraphicsView(tk.Frame):
     """Třída umožňuje po inicializaci ukládat předané data do tk.Frame."""
@@ -16,6 +17,11 @@ class GraphicsView(tk.Frame):
         #               highlightcolor = gv.BLACK_COLOR,
         #               highlightthickness = gv.GRID_HIGHLIGHT_THICKNESS)
         parent.bind("<Configure>", self.on_configure)
+
+        # inicializace manazera vzorcu
+        self.equations_manager = EquationsManager(gv.FONT_EQUATIONS)
+        self.equations_manager.load_images()
+
 
     # event handler
     def on_configure(self, event):
@@ -115,6 +121,7 @@ class GraphicsView(tk.Frame):
                            sticky = "nsew")
         
         # pod posledni vytvoreny radek pridej data z bottom_dala_list
+        # format: string, LaTex string, hodnota, jednotka
         starting_row_index = max_list_length + 1  # zacinajici radek pro bottom data
         for i, row_data in enumerate(bottom_data_list):
             # aktualizace indexu row
@@ -124,7 +131,7 @@ class GraphicsView(tk.Frame):
             #print(f"zapisuju do row = {row_index} hodnoty {row_data[0]} a {row_data[1]}")
 
 
-            # prvni label
+            # prvni label (text)
             label_1 = tk.Label(self,
                                text = row_data[0],
                                font = self.graphics_font,
@@ -134,19 +141,34 @@ class GraphicsView(tk.Frame):
                                anchor = "w")
             label_1.grid(row = row_index,
                          column = 0,
-                         columnspan = num_of_lists - 1,
+                         columnspan = num_of_lists - 2,
                          sticky = "nsew")
-            # druhy label
+            # druhy label (vzorec nebo prazdne pole)
             label_2 = tk.Label(self,
-                               text = row_data[1],
+                               borderwidth = gv.LABEL_BORDER_WIDTH,
+                               relief = "solid",
+                               padx = gv.LABEL_BUFFER_X)
+            try:
+                image = self.equations_manager.get_image(row_data[1])
+                label_2.configure(image = image)
+            except Exception as ex:
+                # debug print
+                print(f"Nepodarilo se nacist obrazek rovnice: {ex}")
+                label_2.configure(image = None)
+            label_2.grid(row = row_index,
+                         column = num_of_lists - 2,
+                         sticky = "nsew")
+            # treti label (vysledek + jednotka)
+            label_3 = tk.Label(self,
+                               text = f"{row_data[2]} {row_data[3]}",
                                font = self.graphics_font,
                                borderwidth = gv.LABEL_BORDER_WIDTH,
                                relief = "solid",
                                padx = gv.LABEL_BUFFER_X,
-                               pady = gv.LABEL_BUFFER_Y,
-                               anchor = "e")
-            label_2.grid(row = row_index,
-                         column = num_of_lists -1,
+                               pady = gv.LABEL_BUFFER_Y)
+                               #anchor = "e")
+            label_3.grid(row = row_index,
+                         column = num_of_lists - 1,
                          sticky = "nsew")
             
         # updatuj velikost

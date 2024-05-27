@@ -3,11 +3,13 @@ from tkinter import filedialog, messagebox, ttk # dialog, message okna a combobo
 import pandas as pd  # pro pripadne nacitani a zpracovani dat z excel souboru
 import math
 import heapq  # prace s haldami (implementace Huffmanova kodovani)
-import matplotlib.pyplot as pplt  # vytvoreni grafu/diagramu atd..
+import matplotlib.pyplot as pplt  # pro MATH vzorce (podobne LaTeX)
 import networkx as nx  # vytvareni, manipulace grafu a siti (pro binarni stromy)
 import gui_variables as gv  # global variables pro GUI
 import json  # ulozeni/nacteni abecedy z JSON souboru
 from GraphicsView import GraphicsView  # moje trida pro zapouzdreni ruznych zobrazeni dat
+from encoding_helper import Node, get_average_word_length
+from encoding_helper import get_source_entropy, get_code_effectivity
 
 # trida pro hlavni okno aplikace
 class EffectiveCodeApp:
@@ -170,7 +172,7 @@ class EffectiveCodeApp:
         self.mouse_click_start_x = event.x
         self.mouse_click_start_y = event.y
 
-    # event funkce pri pohybu mysi
+    # event funkce pri pohybu mysi (zatim nevyuzito)
     def on_mouse_movement(self, event):
         """Pomocná funkce řeší event pohybu myši."""
         #print(f"Canvas mouse movement at ({event.x}, {event.y})")  # debug
@@ -227,7 +229,9 @@ class EffectiveCodeApp:
         
         # list pro data zobrazene pod tabulkou
         bottom_data = [["Průměrná informační hodnota znaku",
-                        round(self.calc_average_information_amount, 2)]]
+                        gv.EQ_NAME_AVG_INFO_VALUE,
+                        round(self.calc_average_information_amount, 2),
+                        "bitů"]]
         
         # extending column names strings
         extending_names = ["Kódové slovo"]
@@ -247,14 +251,21 @@ class EffectiveCodeApp:
             case gv.COMBOBOX_METHOD_SHANNON:
                 if self.shannon_complete:
                     # rozsir o dalsi nazvy sloupcu
+                    extending_names[0] += " (Shannon)"
                     names_list.extend(extending_names)
                     # pridej udaje o kodovani do dat pod tabulkou
                     extending_data = [["Průměrná délka kódového slova",
-                                       self.shannon_avg_codeword_length],
+                                       gv.EQ_NAME_AVG_CODEWORD_LEN,
+                                       self.shannon_avg_codeword_length,
+                                       "bitů"],
                                       ["Entropie zdroje",
-                                       self.shannon_source_entropy],
+                                       gv.EQ_NAME_SOURCE_ENTROPY,
+                                       self.shannon_source_entropy,
+                                       "bitů"],
                                       ["Efektivita kódu",
-                                       self.shannon_code_effectivity]]
+                                       gv.EQ_NAME_CODE_EFFECTIVITY,
+                                       self.shannon_code_effectivity,
+                                       "%"]]
                     bottom_data.extend(extending_data)
 
                     # debug
@@ -270,10 +281,34 @@ class EffectiveCodeApp:
 
             case gv.COMBOBOX_METHOD_HUFFMAN:
                 if self.huffman_complete:
+                    # rozsir o dalsi nazvy sloupcu
+                    extending_names[0] += " (Huffman)"
+                    names_list.extend(extending_names)
+                    # pridej udaje o kodovani do dat pod tabulkou
+                    extending_data = [["Průměrná délka kódového slova",
+                                       gv.EQ_NAME_AVG_CODEWORD_LEN,
+                                       self.huffman_avg_codeword_length,
+                                       "bitů"],
+                                      ["Entropie zdroje",
+                                       gv.EQ_NAME_SOURCE_ENTROPY,
+                                       self.huffman_source_entropy,
+                                       "bitů"],
+                                      ["Efektivita kódu",
+                                       gv.EQ_NAME_CODE_EFFECTIVITY,
+                                       self.huffman_code_effectivity,
+                                       "%"]]
+                    bottom_data.extend(extending_data)
+
                     # debug
-                    print(f"ukazani abecedy s vybranym huffmanem a hotovym huffmanam"
-                          "nyni by se meli ukazat udaje s huffmanovym kodovanim.")
-                    pass
+                    #print(f"pred volanim show_alphabet, hodnota v shannon_encoded_chars_list je:\n"
+                    #      f"{self.shannon_encoded_chars_list}")
+                    # zavolej show_alphabet s udaji vcetne shannona
+                    self.graphics_view.show_alphabet(names_list,
+                                                     bottom_data,
+                                                     self.characters_list,
+                                                     self.calc_probabilities_list,
+                                                     self.calc_characters_information_list,
+                                                     self.huffman_encoded_chars_list)
             # default moznost
             case _:
                 print(f"Pokus o ukazani informaci o abecede s nedefinovanou metodou.\n")        
@@ -303,40 +338,24 @@ class EffectiveCodeApp:
 
     # kodovani zdrojove abecedy pomoci metody shannon-fanovy
     def encode_alphabet_shannon(self):
-        """Funkce použije Shannon-fanovu metodu kódování na zdrojovou abecedu."""
-
-        #print(f"listy serazene:\n{sorted_values_descending}\n")  # debug print
-        #print(f"listy serazenych hodnot:\nchars:\n{chars_sorted}\nprobs:\n{probs_sorted}\n")  #debug print
-
+        """Funkce použije Shannon-fanovu metodu kódování na zdrojovou abecedu.
+        
+        Implementováno povocí rekurzivní funkce shannon_recursive."""
+        # pomocna funkce ktera se rekursivne vola dokud nevrati list kodovych slov
         def shannon_recursive(probs_list, codes, prefix = ""):
             """Očekává serazeny list pravdepodobnosti sestupne."""
             # pokud predany list pravdepodobnosti nema alespon 2 elementy (2 pravdepodobnosti)
             # vrat list kodu obsahujici prazdny string ""
-
-            #debug
-            #print(f"\tshannon_recursive obdrzel typ>{type(probs_list)}<: {probs_list}\n"
-            #      f"\tobdrzene kody: {codes}\n")
-
             if len(probs_list) == 1:
-                # debug
-                #print(f"\t\tlist s delkou jedna, vracim kod >> {prefix}")
                 codes.append(prefix)
                 return codes
 
             # rozdel predany list na 2 listy s co nejblizsi sumou pravdepodobnosti
             ones_list, zeros_list = split_list(probs_list)
 
-            #debug
-            #print(f"ones_list: {ones_list}, higher_list: {zeros_list}\n"
-            #      f"volam na kazdy rekurzy")
-
             # ziskani kodu pro oba listy - REKURZE
             codes = shannon_recursive(ones_list, codes, prefix + "1")
             codes = shannon_recursive(zeros_list, codes, prefix + "0")
-
-            # debug
-            #print(f"Výsledné kódy pro seznam: {probs_list} ->"
-            #      f"{codes}\n")
 
             return codes
 
@@ -348,10 +367,6 @@ class EffectiveCodeApp:
             - např. [0.30, 0.25, 0.11, ... ]
             Vrací dva listy pravdepodobnosti s co nejblizsi sumou
             -> ones_list, zeros_list."""
-
-            #debug
-            #print(f"\tsplitting list: {probs_list}...")
-
             ones_list = []
             zeros_list = []
 
@@ -359,9 +374,6 @@ class EffectiveCodeApp:
             if probs_list:
                 # pokud jsou v listu pouze 2 elementy, rozdel na 2 listy s 1 elementem
                 if len(probs_list) == 2:
-                    # debug
-                    #print(f"\t\tdelka probs_list je rovna 2 rozdeluji na 2 listy:\n"
-                    #      f"\t\tones_list: [{probs_list[0]}], zeros_list: [{probs_list[1]}]\n")
                     return [probs_list[0]], [probs_list[1]]
 
                 # pokud je delsi pokracuj vypocty
@@ -372,9 +384,6 @@ class EffectiveCodeApp:
                     # - limit pro sumu ones_list
                     limit_sum = sum(probs_list) / 2
 
-                    # debug
-                    #print(f"\t\tlimit_sum = {limit_sum}")
-
                     # prubezna suma
                     cumulative_sum = 0.0
 
@@ -384,33 +393,20 @@ class EffectiveCodeApp:
                         cumulative_sum += prob
                         # pokud dosavadni suma presahla limit zde se list rozdeli
                         if cumulative_sum > limit_sum:
-                            # debug
-                            #print(f"\t\toveruji ktera suma je lepsi: (cumul - limit) < (limit - previous_cumul):\n"
-                            #      f"\t\t({cumulative_sum:.3f} - {limit_sum:.3f}) < ({limit_sum:.3f} - {(cumulative_sum - prob):.3f})\n"
-                            #      f"\t\t{(cumulative_sum - limit_sum)} < {(limit_sum - (cumulative_sum - prob))} = {(cumulative_sum - limit_sum) < (limit_sum - (cumulative_sum - prob))}\n")
-                            
                             # pokud by dalsi index mel mensi rozdil sum pouzij ho taky
                             if (cumulative_sum - limit_sum) < (limit_sum - (cumulative_sum - prob)):
                                 index += 1
                             split_index = index
                             break
-                        
-            #debug
-            #print(f"\t\tnalezen index: {split_index}")
 
             # nalezen index rozdeleni, vloz hodnoty do 2 mensich listu
             ones_list = probs_list[:split_index]  # do indexu
             zeros_list = probs_list[split_index:]  # od index
 
-            # debug
-            #print(f"\t\tlisty: {ones_list} and {zeros_list}")
-
             # vrat 2 listy (pokud predany argument byl prazdny vrati se
             # 2 prazdne listy pri overeni na zacatku funkce, ale usetri se vypocty
             return ones_list, zeros_list
 
-        # debug
-        #print(f"spusteno kodovani podle shannona..\n")
 
         # overeni ze byla vybrana metoda kodovani
         if self.encoding_method == None:
@@ -438,9 +434,6 @@ class EffectiveCodeApp:
         # v serazenem (sestupne) listu
         probs_list = [pair[1] for pair in sorted_values_descending]
 
-        # debug
-        #print(f"zistane probs ze serazeneho listu dvojic: {probs_list}\n")
-
         # vygenerovani kodovych slov
         codes_list = shannon_recursive(probs_list, codes_list)
 
@@ -455,50 +448,115 @@ class EffectiveCodeApp:
             # uloz kodove slovo
             self.shannon_encoded_chars_list.append(codes_list[code_word_index])
         
-        # debug
-        #print(f"shannonuv algoritmus hotovo...\nnalezene kodove slova pro znaky:\n")
-        #for (char, _), code in zip(sorted_values_descending, codes_list):
-        #    print(f"({char}, {code})\n")
-
-        # debug
-        #print(f"kodove slova ulozene v tomto poradi:\n")
-        #for char, code_word in zip(self.characters_list, self.shannon_encoded_chars_list):
-        #    print(f"char: {char} || code: {code_word}")
-
         # dopocitani ostatnich udaju vygenerovaneho kodu
         # vypocet prumerne delky kodoveho slova
-        #number_of_symbols = len(self.characters_list)  # pocet ruznych symbolu
-        average_length = 0
-        for code_word, prob in zip(self.shannon_encoded_chars_list,
-                                   self.calc_probabilities_list):
-            average_length += len(code_word) * prob
+        average_length = get_average_word_length(self.shannon_encoded_chars_list,
+                                                 self.calc_probabilities_list)
         self.shannon_avg_codeword_length = round(average_length, 3)
 
-        #print(f"agv code word length: {self.shannon_avg_codeword_length}")  # debug
-
         # vypocet entropie zdroje
-        source_entropy = 0
-        for prob in self.calc_probabilities_list:
-            source_entropy -= prob * math.log2(prob)  # zaporna suma
+        source_entropy = get_source_entropy(self.calc_probabilities_list)
         self.shannon_source_entropy = round(source_entropy, 3)
 
-        # debug
-        #print(f"source entropy: {self.shannon_source_entropy}")
-        
         # vypocet efektivity kodu
-        code_effectivity = (source_entropy / average_length) * 100.0  # procent
+        code_effectivity = get_code_effectivity(source_entropy, average_length)
         self.shannon_code_effectivity = round(code_effectivity, 3)
-
-        # debug
-        #print(f"code effectivity: {self.shannon_code_effectivity}")
 
         # hotovo oznac shannon metodu za vypocitanou
         self.shannon_complete = True
-        
 
     def encode_alphabet_huffman(self):
-        print("spusteno kodovani podle huffmana..\n")
-        pass
+        """Funkce sestaví strom uzlů ze kterého vygeneruje kódové slova.
+
+        Využitá je funkce generate_tree. kroky funkce:
+        - seřazení uzlů podle jejich pravděpodobností
+        - ze posledních 2 uzlů vytvoří nový sloučený uzel
+        - přidá sloučený (merged) uzel do listu uzlů
+        toto opakuje dokud je v listu uzlů více než 1 uzel
+
+        poté pomocí REKURZIVNÍ funkce generate_codes vygeneruje zpětným 
+        postupem po stromu uzlů kódové slova:
+        - dokud je do funkce předán nějaký strom
+          pokud je nastaven orig_char_index připiš kód (0/1)
+          jinak zavolej znovu generate_codes pro jednotlivé
+          potomky uzlu (left/right)
+
+        Po této funkci jsou v proměnné codes uloženy kódové slova."""
+        # sestaveni stromu uzlu pro budoucni zpetne ziskani kodovych slov
+        def generate_tree(sorted_nodes):
+            """Funkce vygeneruje strom uzlů podle Huffmanova algoritmu."""
+            while len(sorted_nodes) > 1:
+                # serazeni uzlu podle jejich pravdepodobnosti
+                sorted_nodes.sort(key=lambda x: x.prob)
+
+                # vytvoreni noveho uzlu souctem jejich pravdepodobnosti
+                left = sorted_nodes.pop(0)
+                right = sorted_nodes.pop(0)
+                merged = Node(None, left.prob + right.prob)
+                merged.left = left
+                merged.right = right
+
+                # pridani slouceneho uzlu do listu uzlu
+                sorted_nodes.append(merged)
+            return sorted_nodes
+
+        # REKURZIVNI funkce pro vygenerovani kodovych sloz ze stromu uzlu
+        def generate_codes(codes_list, node, code=''):
+            """Funkce vygeneruje kodove slova pohybem po stromu uzlů."""
+            if node:
+                if node.orig_char_index is not None:
+                    codes_list[node.orig_char_index] = code
+                generate_codes(codes_list, node.left, code + '0')
+                generate_codes(codes_list, node.right, code + '1')
+            return codes_list
+        
+        # overeni ze byla vybrana metoda kodovani
+        if self.encoding_method == None:
+            return False
+        
+        # overeni ze jsou pritomny jiz vypocitane potrebne hodnoty
+        if not self.calc_probabilities_list:
+            return False
+
+        # reset hodnot
+        self.reset_calc_values_huffman()
+  
+        # vytvoreni listu nodes (uzlu) pro jednotlive symboly
+        nodes = [Node(i, prob) for i, prob in enumerate(self.calc_probabilities_list)]
+
+        # inicializace promenne pro kodove slova
+        codes_list = [''] * len(self.calc_probabilities_list)
+
+        # vygenerovani stromu
+        tree = generate_tree(nodes)
+
+        # rekurzivni generovani kodovych slov
+        code_words = generate_codes(codes_list, tree[0])
+
+        # ulozeni kodovych slov do promenne tridy
+        # generovani kodu vraci kodove slova ve stejnem poradi jako byl zadan
+        # list pravdepodobnosti - netreba mapovat
+        self.huffman_encoded_chars_list = code_words
+
+        # dopocitani ostatnich udaju vygenerovaneho kodu
+        # vypocet prumerne delky kodoveho slova
+        average_length = get_average_word_length(self.huffman_encoded_chars_list,
+                                                 self.calc_probabilities_list)
+        self.huffman_avg_codeword_length = round(average_length, 3)
+
+        # vypocet entropie zdroje
+        source_entropy = get_source_entropy(self.calc_probabilities_list)
+        self.huffman_source_entropy = round(source_entropy, 3)
+
+        # vypocet efektivity kodu
+        code_effectivity = get_code_effectivity(source_entropy, average_length)
+        self.huffman_code_effectivity = round(code_effectivity, 3)
+
+        # hotovo oznac shannon metodu za vypocitanou
+        self.huffman_complete = True
+
+
+        
 
     # placeholder debug pro budouci funkci ktera vykresli binarni strom
     def show_encoded_data(self):
