@@ -5,6 +5,7 @@ GraphicsView dědí z třídy tk.Frame a zabaluje do sebe předané"""
 import tkinter as tk
 import gui_variables as gv
 from EquationsManager import EquationsManager
+from binary_tree_maker import BinaryTreeMaker
 
 class GraphicsView(tk.Frame):
     """Třída umožňuje po inicializaci ukládat předané data do tk.Frame."""
@@ -22,6 +23,10 @@ class GraphicsView(tk.Frame):
         self.equations_manager = EquationsManager(gv.FONT_EQUATIONS)
         self.equations_manager.load_images()
 
+        # generator binarnich stromu
+        self.bt_maker = BinaryTreeMaker()
+        self.bt_current_image = None
+
 
     # event handler
     def on_configure(self, event):
@@ -30,11 +35,16 @@ class GraphicsView(tk.Frame):
     # Funkce upravi rozmer frame na aktualni velikost gridu uvnitr
     def adjust_frame_size(self):
         """Funkce pro upravu rozmeru"""
+        #debug
+        print("\t\tZavolano adjust_frame_size")
+
+        # pokus update idletasks (neupdatujou se scrollbary v graphics_canvas)
+        self.update_idletasks()
 
         # debug
-        print(f"adjusting frame size !!\nbefore update_idletasts\nbbox = {self.bbox('all')}\n")
+        #print(f"adjusting frame size called start\n\tbefore update_idletasts\n\tbbox = {self.bbox('all')}\n")
         # update udalosti (zmena rozmeru atd)
-        self.update_idletasks()
+        #self.update_idletasks()
 
         # vypocet nove width a height
         bbox = self.bbox("all")
@@ -49,14 +59,52 @@ class GraphicsView(tk.Frame):
                         height = new_height)
         self.parent.config(scrollregion = self.parent.bbox("all"))
 
-        print(f"adjusting frame size !!\nfnc end\nbbox = {self.bbox('all')}\n")
+        
+
+        #print(f"\tfnc end\n\tbbox = {self.bbox('all')}\nadjusting frame size end\n")
 
 
     def clear_frame(self):
         """Funkce vymaže veškerý obsah který má v tk.Frame uložený."""
+        # vymazani udaju v gridu
         for slave in self.grid_slaves():
             slave.destroy()
             self.grid_forget()
+
+        # vymazani predchozich grafu
+        self.bt_maker = BinaryTreeMaker()  # vytvoreni noveho
+
+    # funkce nastavi instanci teto tridy graf binarniho stromu
+    def show_binary_tree(self, code_words, characters, graph_name=None):
+        """Funkce využije třídu BinaryTreeMaker k zobrazení binarniho stromu."""
+        # debug
+        #print(f"zavolana show_binary_tree funkce.. ted by se mel vykreslit binarni strom...")  # debug
+        # nejdrive vymaz predchozi obsah
+        self.clear_frame()
+        
+        tree_label = tk.Label(self,
+                              borderwidth = gv.LABEL_BORDER_WIDTH,
+                              relief = "solid",
+                              padx = gv.LABEL_BUFFER_X)
+        try:
+            self.bt_current_image = self.bt_maker.get_tree_image(code_words,
+                                                                 characters,
+                                                                 graph_name,
+                                                                 (gv.GRAPH_WIDTH,
+                                                                  gv.GRAPH_HEIGHT))
+                                                                 #gv.GRAPH_SIZE)
+            tree_label.configure(image = self.bt_current_image)
+        except Exception as ex:
+            # debug print
+            print(f"Nepodarilo se nacist obrazek grafu: {ex}")
+            tree_label.configure(image = None)
+        tree_label.grid(row = 0,
+                     column = 0,
+                     sticky = "nsew")
+        print("\t\tted by se mel zobrazit binarni strom")
+
+        # updatuj velikost
+        self.adjust_frame_size()
     
     def show_alphabet(self, column_names_list, bottom_data_list, *lists_of_values):
         """Funkce do vytvoří tabulku předaných údajů.
@@ -173,18 +221,6 @@ class GraphicsView(tk.Frame):
             
         # updatuj velikost
         self.adjust_frame_size()
-            
-        #label_avg = tk.Label(self,
-        #                     text = "",
-        #                     font = self.graphics_font,
-        #                     borderwidth = gv.LABEL_BORDER_WIDTH,
-        #                     relief = "solid")
-        #label_avg.grid(row = max_list_length + 1,
-        #               column = 0,
-        #               columnspan = num_of_lists, sticky = "nsew")
-        
-        # zabalit do okna s novou velikosti
-        #self.center_position()
 
     def show_test_info(self):
         self.clear_frame()
@@ -194,10 +230,29 @@ class GraphicsView(tk.Frame):
                               borderwidth=gv.LABEL_BORDER_WIDTH,
                               relief="solid")
         test_label.grid(row = 0, column = 0, sticky = "nsew")
-        #self.center_position()
+        self.adjust_frame_size()
 
-        # debug
-        #print(f"show_test_info after: grid size = {self.grid_size()}\n")
+    # funkce zobrazi defaultni zpravu
+    def show_default_message(self, txt_msg = "Zatím není co zobrazit"):
+        print(f"byla zavolana show_default_message se zpravou '{txt_msg}'")
+        self.clear_frame()
+        
+        default_label = tk.Label(self,
+                                 text = txt_msg,
+                                 bg = gv.RED_COLOR,
+                                 background = gv.GRAY_COLOR,
+                                 relief = "solid",
+                                 anchor = "center")
+        default_label.grid(row = 0,
+                        column = 0,
+                        columnspan = 5,
+                        rowspan = 3,
+                        sticky = "nsew")
+        
+        self.adjust_frame_size()
+
+
+
 
     def center_position(self):
         self.parent.update_idletasks()

@@ -38,6 +38,7 @@ PANEL_GRAPHICS_BG = "#D3D3D3"  # lightgray
 RED_COLOR = "#FF0000"  # red
 BLACK_COLOR = "#000000"  # black
 GREEN_COLOR = "#008000"  # green
+GRAY_COLOR = "#808080"  # gray
 
 # stav (active/inactive) tlacitek
 ACTIVE_BUTTON_COLOR = "#add8e6"  # lightblue
@@ -47,6 +48,7 @@ INACTIVE_BUTTON_RELIEF = "raised"
 
 # mody grafickeho panelu (podle stiskleho tlacitka)
 MODE_ALPHABET_INFORMATION = "INFO"
+MODE_ALPHABET_GRAPH = "GRAPH"
 MODE_TESTING = "TESTING"
 MODE_USE_ENCODING_METHOD = "ENCODE"
 
@@ -67,6 +69,10 @@ PERMANENT_TAG_STRING = "permanent"
 FONT_UNIVERSAL = "Arial"
 FONT_SIZE = 14
 FONT_EQUATIONS = 20
+
+# udaje pro grafy (binarni stromy)
+GRAPH_WIDTH = 800
+GRAPH_HEIGHT = 600
 
 # hodnoty pro combobox selekci metod
 COMBOBOX_METHOD_SHANNON = "Shannon-Fanova"

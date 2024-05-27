@@ -2,9 +2,8 @@ import tkinter as tk  # pro vykresleni GUI aplikace
 from tkinter import filedialog, messagebox, ttk # dialog, message okna a combobox(ttk)
 import pandas as pd  # pro pripadne nacitani a zpracovani dat z excel souboru
 import math
-import heapq  # prace s haldami (implementace Huffmanova kodovani)
 import matplotlib.pyplot as pplt  # pro MATH vzorce (podobne LaTeX)
-import networkx as nx  # vytvareni, manipulace grafu a siti (pro binarni stromy)
+from graphviz import Digraph  # vytvareni, manipulace grafu a siti (pro binarni stromy)
 import gui_variables as gv  # global variables pro GUI
 import json  # ulozeni/nacteni abecedy z JSON souboru
 from GraphicsView import GraphicsView  # moje trida pro zapouzdreni ruznych zobrazeni dat
@@ -144,10 +143,16 @@ class EffectiveCodeApp:
         # metoda kodovani
         self.encoding_method = None
 
-    # event vyberu metody kodovani uzivatelem
+    # event vyberu metody kodovani uzivatelem z comboboxu
     def on_method_selected(self, event):
         """Funcke řeší event výběru metody z comboboxu."""
         self.encoding_method = event.widget.get()
+
+        # pokud je aktivni mod grafu,
+        # pokus se zobrazit vybrany graf
+        if self.current_mode == gv.MODE_ALPHABET_GRAPH:
+            self.show_alphabet_graph()
+        
 
         # debug
         print(f"vybrana hodnota z comboboxu: {self.encoding_method}\n")
@@ -155,6 +160,8 @@ class EffectiveCodeApp:
     # event konfigurace canvasu
     def on_graphics_canvas_configure(self, event):
         """Funkce se stará o nastaveni scrollregionu a vycentrovani obsahu."""
+        # debug
+        print("\ton_graphics_canvas_configure spusteno...\n\tupdate_idtelasks graphics_canvas spusteno...")
 
         self.graphics_canvas.update_idletasks()
         #self.graphics_canvas.config(scrollregion = self.graphics_canvas.bbox("all"))
@@ -215,6 +222,53 @@ class EffectiveCodeApp:
         #for widget in self.graphics_canvas.winfo_children():
         #    widget.destroy()
         return  # prozatim nemusi mazat nic
+    
+    # funkce zobrazi binarni strom pro abecedu
+    def show_alphabet_graph(self):
+        """Funkce zobrazí binární strom."""
+        # vycisti panel
+        self.clear_panel_graphics()
+
+        # nalezeni dat pro graf podle zvoleneho kodovani
+        if self.encoding_method in [gv.COMBOBOX_METHOD_SHANNON,
+                                    gv.COMBOBOX_METHOD_HUFFMAN]:
+            # je zvolena metoda kodovani pokracuj
+            match self.encoding_method:
+                # metoda shannon, over zda jsou data a pokracuj
+                case gv.COMBOBOX_METHOD_SHANNON:
+                    if self.shannon_complete:
+                        # vybran shannon a vysledky jsou k dispozici
+                        self.graphics_view.show_binary_tree(self.shannon_encoded_chars_list,
+                                                            self.characters_list)
+                    else:
+                        messagebox.showinfo("Chybějící data",
+                                            "Klikněte prosím na tlačítko pro použití"
+                                            " kódování, pro zvolenou "
+                                            f"metodu {self.encoding_method}"
+                                            " zatím nebyl proveden výpočet.")
+                        self.graphics_view.show_default_message("Klikněte na 'Použít kódování'")
+                # metoda huffman, over zda jsou data a pokracuj
+                case gv.COMBOBOX_METHOD_HUFFMAN:
+                    if self.huffman_complete:
+                        # vybran huffman a vysledky jsou k dispozici
+                        self.graphics_view.show_binary_tree(self.huffman_encoded_chars_list,
+                                                            self.characters_list)
+                    else:
+                        messagebox.showinfo("Chybějící data",
+                                            "Klikněte prosím na tlačítko pro použití"
+                                            " kódování, pro zvolenou "
+                                            f"metodu {self.encoding_method}"
+                                            " zatím nebyl proveden výpočet.")
+                        self.graphics_view.show_default_message("Klikněte na 'Použít kódování'")
+                # default case
+                case _:
+                    self.graphics_view.show_default_message("Není vybrána metoda kódování")
+                    print("Pokus o zobrazeni grafu pro zvolenou metodu "
+                          f"{self.encoding_method} se nezdaril.") 
+        else:
+            self.graphics_view.show_default_message("Není vybrána metoda kódování")
+            print("Pokus o zobrazeni grafu pro zvolenou metodu "
+                  f"{self.encoding_method} se nezdaril.") 
 
     # Funkce vypise do panel_graphics informace o abecede
     def show_alphabet_info(self):
@@ -244,74 +298,87 @@ class EffectiveCodeApp:
                                              self.characters_list,
                                              self.calc_probabilities_list,
                                              self.calc_characters_information_list)
+        else:
+            # vyreseni zda ma uzivatel zvolenou metodu kodovani a zda jsou pritomny data
+            match self.encoding_method:
+                # pridani dat pokud je zvolena metoda shannon-fano
+                case gv.COMBOBOX_METHOD_SHANNON:
+                    if self.shannon_complete:
+                        # rozsir o dalsi nazvy sloupcu
+                        extending_names[0] += " (Shannon)"
+                        names_list.extend(extending_names)
+                        # pridej udaje o kodovani do dat pod tabulkou
+                        extending_data = [["Průměrná délka kódového slova",
+                                           gv.EQ_NAME_AVG_CODEWORD_LEN,
+                                           self.shannon_avg_codeword_length,
+                                           "bitů"],
+                                          ["Entropie zdroje",
+                                           gv.EQ_NAME_SOURCE_ENTROPY,
+                                           self.shannon_source_entropy,
+                                           "bitů"],
+                                          ["Efektivita kódu",
+                                           gv.EQ_NAME_CODE_EFFECTIVITY,
+                                           self.shannon_code_effectivity,
+                                           "%"]]
+                        bottom_data.extend(extending_data)
 
-        # vyreseni zda ma uzivatel zvolenou metodu kodovani a zda jsou pritomny data
-        match self.encoding_method:
-            # pridani dat pokud je zvolena metoda shannon-fano
-            case gv.COMBOBOX_METHOD_SHANNON:
-                if self.shannon_complete:
-                    # rozsir o dalsi nazvy sloupcu
-                    extending_names[0] += " (Shannon)"
-                    names_list.extend(extending_names)
-                    # pridej udaje o kodovani do dat pod tabulkou
-                    extending_data = [["Průměrná délka kódového slova",
-                                       gv.EQ_NAME_AVG_CODEWORD_LEN,
-                                       self.shannon_avg_codeword_length,
-                                       "bitů"],
-                                      ["Entropie zdroje",
-                                       gv.EQ_NAME_SOURCE_ENTROPY,
-                                       self.shannon_source_entropy,
-                                       "bitů"],
-                                      ["Efektivita kódu",
-                                       gv.EQ_NAME_CODE_EFFECTIVITY,
-                                       self.shannon_code_effectivity,
-                                       "%"]]
-                    bottom_data.extend(extending_data)
+                        # debug
+                        #print(f"pred volanim show_alphabet, hodnota v shannon_encoded_chars_list je:\n"
+                        #      f"{self.shannon_encoded_chars_list}")
+                        # zavolej show_alphabet s udaji vcetne shannona
+                        self.graphics_view.show_alphabet(names_list,
+                                                         bottom_data,
+                                                         self.characters_list,
+                                                         self.calc_probabilities_list,
+                                                         self.calc_characters_information_list,
+                                                         self.shannon_encoded_chars_list)
+                    # vybran shannon ale nema jeste vypocitane data
+                    else:
+                        self.graphics_view.show_alphabet(names_list,
+                                                 bottom_data,
+                                                 self.characters_list,
+                                                 self.calc_probabilities_list,
+                                                 self.calc_characters_information_list)
+                case gv.COMBOBOX_METHOD_HUFFMAN:
+                    if self.huffman_complete:
+                        # rozsir o dalsi nazvy sloupcu
+                        extending_names[0] += " (Huffman)"
+                        names_list.extend(extending_names)
+                        # pridej udaje o kodovani do dat pod tabulkou
+                        extending_data = [["Průměrná délka kódového slova",
+                                           gv.EQ_NAME_AVG_CODEWORD_LEN,
+                                           self.huffman_avg_codeword_length,
+                                           "bitů"],
+                                          ["Entropie zdroje",
+                                           gv.EQ_NAME_SOURCE_ENTROPY,
+                                           self.huffman_source_entropy,
+                                           "bitů"],
+                                          ["Efektivita kódu",
+                                           gv.EQ_NAME_CODE_EFFECTIVITY,
+                                           self.huffman_code_effectivity,
+                                           "%"]]
+                        bottom_data.extend(extending_data)
 
-                    # debug
-                    #print(f"pred volanim show_alphabet, hodnota v shannon_encoded_chars_list je:\n"
-                    #      f"{self.shannon_encoded_chars_list}")
-                    # zavolej show_alphabet s udaji vcetne shannona
-                    self.graphics_view.show_alphabet(names_list,
-                                                     bottom_data,
-                                                     self.characters_list,
-                                                     self.calc_probabilities_list,
-                                                     self.calc_characters_information_list,
-                                                     self.shannon_encoded_chars_list)
-
-            case gv.COMBOBOX_METHOD_HUFFMAN:
-                if self.huffman_complete:
-                    # rozsir o dalsi nazvy sloupcu
-                    extending_names[0] += " (Huffman)"
-                    names_list.extend(extending_names)
-                    # pridej udaje o kodovani do dat pod tabulkou
-                    extending_data = [["Průměrná délka kódového slova",
-                                       gv.EQ_NAME_AVG_CODEWORD_LEN,
-                                       self.huffman_avg_codeword_length,
-                                       "bitů"],
-                                      ["Entropie zdroje",
-                                       gv.EQ_NAME_SOURCE_ENTROPY,
-                                       self.huffman_source_entropy,
-                                       "bitů"],
-                                      ["Efektivita kódu",
-                                       gv.EQ_NAME_CODE_EFFECTIVITY,
-                                       self.huffman_code_effectivity,
-                                       "%"]]
-                    bottom_data.extend(extending_data)
-
-                    # debug
-                    #print(f"pred volanim show_alphabet, hodnota v shannon_encoded_chars_list je:\n"
-                    #      f"{self.shannon_encoded_chars_list}")
-                    # zavolej show_alphabet s udaji vcetne shannona
-                    self.graphics_view.show_alphabet(names_list,
-                                                     bottom_data,
-                                                     self.characters_list,
-                                                     self.calc_probabilities_list,
-                                                     self.calc_characters_information_list,
-                                                     self.huffman_encoded_chars_list)
-            # default moznost
-            case _:
-                print(f"Pokus o ukazani informaci o abecede s nedefinovanou metodou.\n")        
+                        # debug
+                        #print(f"pred volanim show_alphabet, hodnota v shannon_encoded_chars_list je:\n"
+                        #      f"{self.shannon_encoded_chars_list}")
+                        # zavolej show_alphabet s udaji vcetne shannona
+                        self.graphics_view.show_alphabet(names_list,
+                                                         bottom_data,
+                                                         self.characters_list,
+                                                         self.calc_probabilities_list,
+                                                         self.calc_characters_information_list,
+                                                         self.huffman_encoded_chars_list)
+                    # vybrana moznost huffman ale data jeste nejsou spocteny
+                    else:
+                        self.graphics_view.show_alphabet(names_list,
+                                                 bottom_data,
+                                                 self.characters_list,
+                                                 self.calc_probabilities_list,
+                                                 self.calc_characters_information_list)
+                # default moznost
+                case _:
+                    print(f"Pokus o ukazani informaci o abecede s nedefinovanou metodou.\n")        
 
     # debug test function (to be replaces later)
     def show_test_stuff(self):
@@ -564,12 +631,17 @@ class EffectiveCodeApp:
         pass
 
     def apply_mode(self, mode):
+
+        # debug
+        print(f"apply_mode --- {mode}")
         # podle modu zobraz pozadovane data do grafickeho panelu
         match mode:
             case gv.MODE_ALPHABET_INFORMATION:
                 self.show_alphabet_info()
             case gv.MODE_TESTING:
                 self.show_test_stuff()
+            case gv.MODE_ALPHABET_GRAPH:
+                self.show_alphabet_graph()
             # TODO zde doplnit dalsi tlacitka co se pridaji do panelu modu
             case None:
                 pass
@@ -649,6 +721,15 @@ class EffectiveCodeApp:
         modes_button_second.pack(side = tk.LEFT,
                                  padx = gv.BUTTON_BUFFER,
                                  pady = gv.BUTTON_BUFFER)
+        
+        # tlacitko pro mod zobrazeni binarniho stromu
+        modes_button_show_graph = tk.Button(self.panel_modes,
+                                            text = "binární strom",
+                                            command = lambda: set_active_mode(gv.MODE_ALPHABET_GRAPH,
+                                                                              modes_button_show_graph))
+        modes_button_show_graph.pack(side = tk.LEFT,
+                                     padx = gv.BUTTON_BUFFER,
+                                     pady = gv.BUTTON_BUFFER)
         
         # combobox pro vyber metody kodovani
         self.encoding_method = None  # reset vybrane metody
