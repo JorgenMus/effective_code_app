@@ -21,8 +21,6 @@ class BinaryTreeMaker:
         self.generated_tree = None
         self.images = {}
         
-
-    
     # generovani stromu pomoci knihovny graphviz
     def create_binary_tree_graphviz(self, code_words, characters, graph_name):
         tree = nx.DiGraph()
@@ -55,74 +53,6 @@ class BinaryTreeMaker:
         pplt.close()
 
         return os.path.exists(file_name)
-    
-    # generovani stromu pomoci knihovny networkx
-    # zatim nefunkcni
-    def create_binary_tree(self, code_words, characters, graph_name):
-        tree = nx.DiGraph()
-        tree.add_node('root')  # korenovy uzel
-
-        for code, char in zip(code_words, characters):
-            current_node = 'root'
-            for bit in code:
-                next_node = f'{current_node}_{bit}'
-                if not tree.has_node(next_node):
-                    tree.add_node(next_node)
-                tree.add_edge(current_node, next_node, label=bit)
-                current_node = next_node
-            tree.nodes[current_node]['label'] = char
-
-        self.generated_tree = tree
-
-        # vytvoreni prazdneho grafu
-
-        #tree = nx.Graph(name = graph_name)
-#
-        ## pridani uzlu
-        #tree.add_node(1)
-        #tree.add_node(2)
-        #tree.add_node(3)
-        #tree.add_node(4)
-#
-        ## pridani hran
-        #tree.add_edge(1, 2)
-        #tree.add_edge(1, 3)
-        #tree.add_edge(2, 4)
-
-        self.generated_tree = tree
-
-    # funkce vytvoreni obrazku ze stromu (varianta networkx)
-    def create_image(self, file_name, size=(400, 400)):
-        # Vytvoření prázdného obrázku
-        #image = Image.new("RGB", size, color="white")
-#
-        ## Uložení pozic uzlů
-        #pos = nx.spring_layout(G)
-#
-        ## Vykreslení uzlů a hran
-        #nx.draw(G, pos, with_labels=True,
-        #        arrows=True, node_size=3000,
-        #        font_size=10, node_color='lightblue',
-        #        ax=None)
-#
-        ## Převod obrázku do formátu pro Tkinter
-        #image_tk = ImageTk.PhotoImage(image)
-#
-        #return image_tk
-
-        # vykresleni grafu
-        position = nx.spring_layout(self.generated_tree)
-        nx.draw(self.generated_tree, position,
-                with_labels = True,
-                node_size = 500,
-                node_color = "red",
-                font_size = 12,
-                font_weight = "bold")
-        
-        pplt.savefig(file_name, bbox_inches = "tight")
-        pplt.close()
-
-        return os.path.exists(file_name)
 
     # funkce pro predane kodove slova a znaky (pripadny nazev grafu)
     # vygeneruje a vrati obrazek
@@ -145,13 +75,7 @@ class BinaryTreeMaker:
             print(f"\tnove jmeno grafu: '{graph_name}'")
             # vytvoreni a ulozeni stromu pro graph
             
-            
-            # debug semestralni priklad
-            graph_name = "Semestralni_priklad"
-            self.create_binary_tree_graphviz(["111", "101", "001", "0001", "0000", "100", "0100", "011", "0101", "110"],
-                                             ["a", "e", "i", "o", "u", "t", "r", "s", "n", "p"],
-                                             graph_name)
-            #self.create_binary_tree(code_words, characters, graph_name) # TODO vratit zpet po debugu
+            self.create_binary_tree_graphviz(code_words, characters, graph_name)
             
             # pouziti stromu pro vytvoreni a ulozeni obrazku
             file_name = graph_name + ".png"

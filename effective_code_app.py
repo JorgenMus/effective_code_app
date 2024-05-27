@@ -765,7 +765,7 @@ class EffectiveCodeApp:
         
         V případě špatně zadaných znaků v abecedě otevře editační okno."""
         # nacti data abecedy z json souboru
-        chars, probs = self.load_alphabet_from_json_file()
+        chars, probs, file_name = self.load_alphabet_from_json_file()
 
         # validace abecedy (pokud nejaka chyba spust editaci abecedy)
         if self.is_alphabet_valid(chars, probs) == False:
@@ -778,13 +778,13 @@ class EffectiveCodeApp:
         # validace po editaci abecedy
         if self.is_alphabet_valid(chars, probs):
             # predej abecedu oknu pro dalsi praci
-            self.use_alphabet(chars, probs)
+            self.use_alphabet(chars, probs, file_name)
         else:
             messagebox.showwarning("Varování",
                                    "Předaná abeceda není validní.")
 
 
-    def use_alphabet(self, chars, probs):
+    def use_alphabet(self, chars, probs, file_name = None):
         """Funkce nastavi predanou abecedu do hlavniho okna pro dalsi praci.
         
         Po uložení abecedy do okna projde widgety v panelu abecedy a vymaže
@@ -795,6 +795,9 @@ class EffectiveCodeApp:
         self.reset_calc_values_shannon()
         self.reset_calc_values_huffman()
         self.current_mode = None
+
+        # nastaveni jmena abecedy
+        self.alphabet_name = file_name
 
         # ulozeni znaku a pravdepodobnosti do okna
         self.characters_list = chars
@@ -1012,7 +1015,7 @@ class EffectiveCodeApp:
                     chars = alphabet_data.get(gv.JSON_CHARACTERS_NAME, [])
                     probs = alphabet_data.get(gv.JSON_PROBABILITIES_NAME, [])                    
 
-                    return chars, probs
+                    return chars, probs, file_name
         except Exception as ex:
             messagebox.showerror("Chyba načtení abecedy",
                                  f"Došlo k chybě při načítání abecedy.\n{ex}")
