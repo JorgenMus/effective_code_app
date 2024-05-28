@@ -10,6 +10,7 @@ import json  # ulozeni/nacteni abecedy z JSON souboru
 from GraphicsView import GraphicsView  # moje trida pro zapouzdreni ruznych zobrazeni dat
 from encoding_helper import Node, get_average_word_length
 from encoding_helper import get_source_entropy, get_code_effectivity
+from encoding_helper import EvenParityEncoder
 from PIL import Image, ImageGrab  # ukladani do png souboru
 import os
 
@@ -118,6 +119,9 @@ class EffectiveCodeApp:
         self.button_manual_input_alphabet.bindtags((gv.PERMANENT_TAG_STRING,)
                                                    + self.button_manual_input_alphabet.bindtags())
 
+        # nazev slozky ve ktere uzivatel spustil program
+        self.app_directory = os.path.dirname(os.path.realpath(__file__))
+
         # data - pri inicializaci prazdne
         self.characters_list = []
         self.probabilities_list = []
@@ -151,14 +155,17 @@ class EffectiveCodeApp:
         """Funcke řeší event výběru metody z comboboxu."""
         self.encoding_method = event.widget.get()
 
+        # debug
+        print(f"vybrana hodnota z comboboxu: {self.encoding_method}\n")
+
         # pokud je aktivni mod grafu,
         # pokus se zobrazit vybrany graf
         if self.current_mode == gv.MODE_ALPHABET_GRAPH:
             self.show_alphabet_graph()
-        
+        elif self.current_mode == gv.MODE_ALPHABET_INFORMATION:
+            self.show_alphabet_info()
 
-        # debug
-        print(f"vybrana hodnota z comboboxu: {self.encoding_method}\n")
+        
 
     # event konfigurace canvasu
     def on_graphics_canvas_configure(self, event):
@@ -220,17 +227,17 @@ class EffectiveCodeApp:
             widget.destroy()
 
     # funkce vymaze widgety v grafickem panelu a pripravi tak pro nove udaje
-    def clear_panel_graphics(self):
-        """Funkce vymaže obsah grafického panelu (widgets)."""
-        #for widget in self.graphics_canvas.winfo_children():
-        #    widget.destroy()
-        return  # prozatim nemusi mazat nic
+    #def clear_panel_graphics(self):
+    #    """Funkce vymaže obsah grafického panelu (widgets)."""
+    #    #for widget in self.graphics_canvas.winfo_children():
+    #    #    widget.destroy()
+    #    return  # prozatim nemusi mazat nic
     
     # funkce zobrazi binarni strom pro abecedu
     def show_alphabet_graph(self):
         """Funkce zobrazí binární strom."""
         # vycisti panel
-        self.clear_panel_graphics()
+        #self.clear_panel_graphics()
 
         # nalezeni dat pro graf podle zvoleneho kodovani
         if self.encoding_method in [gv.COMBOBOX_METHOD_SHANNON,
@@ -276,8 +283,10 @@ class EffectiveCodeApp:
     # Funkce vypise do panel_graphics informace o abecede
     def show_alphabet_info(self):
         """Funkce do grafického panelu vypíše informace o zdrojové abecedě."""
+        #debug print
+        print("\t---- spusteno show_alphabet_info ----")
         # nejdrive vycistit panel
-        self.clear_panel_graphics()
+        #self.clear_panel_graphics()
 
         # sestaveni ziskani nazvu tabulky pokud je zvolena nejaka metoda
         names_list = ["Znak",
@@ -301,6 +310,8 @@ class EffectiveCodeApp:
                                              self.characters_list,
                                              self.calc_probabilities_list,
                                              self.calc_characters_information_list)
+            #debug
+            print("\t\tshow 1\t\t")
         else:
             # vyreseni zda ma uzivatel zvolenou metodu kodovani a zda jsou pritomny data
             match self.encoding_method:
@@ -335,6 +346,8 @@ class EffectiveCodeApp:
                                                          self.calc_probabilities_list,
                                                          self.calc_characters_information_list,
                                                          self.shannon_encoded_chars_list)
+                        #debug
+                        print("\t\tshow 2\t\t")
                     # vybran shannon ale nema jeste vypocitane data
                     else:
                         self.graphics_view.show_alphabet(names_list,
@@ -342,6 +355,9 @@ class EffectiveCodeApp:
                                                  self.characters_list,
                                                  self.calc_probabilities_list,
                                                  self.calc_characters_information_list)
+                        
+                        #debug
+                        print("\t\tshow 3\t\t")
                 case gv.COMBOBOX_METHOD_HUFFMAN:
                     if self.huffman_complete:
                         # rozsir o dalsi nazvy sloupcu
@@ -372,6 +388,8 @@ class EffectiveCodeApp:
                                                          self.calc_probabilities_list,
                                                          self.calc_characters_information_list,
                                                          self.huffman_encoded_chars_list)
+                        #debug
+                        print("\t\tshow 4\t\t")
                     # vybrana moznost huffman ale data jeste nejsou spocteny
                     else:
                         self.graphics_view.show_alphabet(names_list,
@@ -379,13 +397,15 @@ class EffectiveCodeApp:
                                                  self.characters_list,
                                                  self.calc_probabilities_list,
                                                  self.calc_characters_information_list)
+                        #debug
+                        print("\t\tshow 5\t\t")
                 # default moznost
                 case _:
                     print(f"Pokus o ukazani informaci o abecede s nedefinovanou metodou.\n")        
 
     # debug test function (to be replaces later)
     def show_test_stuff(self):
-        self.clear_panel_graphics()
+        #self.clear_panel_graphics()
         self.graphics_view.show_test_info()   
     
     # pomocna funcke resetuje hodnoty pouzivane pri kodovani
@@ -690,6 +710,7 @@ class EffectiveCodeApp:
                 else:
                     # pokud vysledky pro shannon nejsou dopocitej a updatuj zobrazeni
                     self.encode_alphabet_shannon()
+
                 self.apply_mode(self.current_mode)
             elif (method == gv.COMBOBOX_METHOD_HUFFMAN):
                 # opet kontrola existujicich vysledku
@@ -713,6 +734,7 @@ class EffectiveCodeApp:
                                       command = lambda: set_active_mode(gv.MODE_ALPHABET_INFORMATION,
                                                                         modes_button_info))
         modes_button_info.pack(side = tk.LEFT,
+                               fill = tk.Y,
                                padx = gv.BUTTON_BUFFER,
                                pady = gv.BUTTON_BUFFER)
         
@@ -730,6 +752,7 @@ class EffectiveCodeApp:
                                            text = "Uložit pohled",
                                            command = self.on_save_view)
         modes_button_save_view.pack(side = tk.LEFT,
+                                    fill = tk.Y,
                                     padx = gv.BUTTON_BUFFER,
                                     pady = gv.BUTTON_BUFFER)
         
@@ -739,6 +762,7 @@ class EffectiveCodeApp:
                                             command = lambda: set_active_mode(gv.MODE_ALPHABET_GRAPH,
                                                                               modes_button_show_graph))
         modes_button_show_graph.pack(side = tk.LEFT,
+                                     fill = tk.Y,
                                      padx = gv.BUTTON_BUFFER,
                                      pady = gv.BUTTON_BUFFER)
         
@@ -756,19 +780,78 @@ class EffectiveCodeApp:
         modes_combobox_encoding_method_selection.bind("<<ComboboxSelected>>",
                                                       self.on_method_selected)
         
+        # tlacitko pro pouziti metody
         modes_button_use_method = tk.Button(self.panel_modes,
-                                            text = "Použít kódování",
+                                            text = gv.ENCODER_PROMPT_USE_METHOD,
                                             command = on_encode_button_click)
         modes_button_use_method.pack(side = tk.LEFT,
+                                     fill = tk.Y,
                                      padx = gv.BUTTON_BUFFER,
                                      pady = gv.BUTTON_BUFFER)
         
+        modes_button_encoder = tk.Button(self.panel_modes,
+                                         text = gv.ENCODER_PROMPT_ENCODE_EVEN_PARITY,
+                                         command = self.on_encoder_open_click)
+        modes_button_encoder.pack(side = tk.LEFT,
+                                  fill = tk.Y,
+                                  padx = gv.BUTTON_BUFFER,
+                                  pady = gv.BUTTON_BUFFER)
+        
         #debug
-        print(f"combobox obnovet, aktualni hodnota v nej: {self.encoding_method}.\n")
+        print(f"combobox obnoven, aktualni hodnota v nej: {self.encoding_method}.\n")
 
         
         # pri prvotni inicializaci aktivuj tlacitko pro info o abecede
         set_active_mode(gv.MODE_ALPHABET_INFORMATION, modes_button_info)
+
+    # spusteni enkoderu pokud je to mozne
+    def on_encoder_open_click(self):
+        """Funkce pro spustení enkodéru (zapezpečí kód sudou paritou)."""
+        # podle vybrane metody kodovani se spusti enkoder s danym kodem
+        match self.encoding_method:
+            # pouziti kodu od shannon metody
+            case gv.COMBOBOX_METHOD_SHANNON:
+                if self.shannon_complete:
+                    # vytvoreni enkoderu pro aktualni znaky a kodove slova
+                    encoder = EvenParityEncoder(chars = self.characters_list,
+                                                code_words = self.shannon_encoded_chars_list)
+                    
+                    # spusteni enkoderu
+                    encoder.show_encoding_window()
+                    #debug
+                    print(f"ted by se mel spustit enkoder s kodem SHANNONA")
+                # jinak vypis zpravu ze je treba kod dotvorit
+                else:
+                    messagebox.showinfo("Nedostupný kód",
+                                        "Nejdříve klikněte na tlačítko "
+                                        f"{gv.ENCODER_PROMPT_USE_METHOD} "
+                                        "pro vytvoření kódu metodou podle "
+                                        f"{gv.COMBOBOX_METHOD_SHANNON}.")
+                    return
+            # pouziti kodu od huffman metody
+            case gv.COMBOBOX_METHOD_HUFFMAN:
+                if self.huffman_complete:
+                    # vytvoreni enkoderu pro aktualni znaky a kodove slova
+                    encoder = EvenParityEncoder(chars = self.characters_list,
+                                                code_words = self.huffman_encoded_chars_list)
+                    
+                    # spusteni enkoderu
+                    encoder.show_encoding_window()
+
+                    #debug
+                    print("ted by se mel spustit enkoder s koden HUFFMANA")
+                # jinak vypis zpravu ze je treba kod dotvorit
+                else:
+                    messagebox.showinfo("Nedostupný kód",
+                                        "Nejdříve klikněte na tlačítko "
+                                        f"{gv.ENCODER_PROMPT_USE_METHOD} "
+                                        "pro vytvoření kódu metodou podle "
+                                        f"{gv.COMBOBOX_METHOD_SHANNON}.")
+                    return
+            # ostatni pripady nic nedelej
+            case _:
+                return
+
 
 
     def on_load_alphabet(self):
@@ -859,7 +942,7 @@ class EffectiveCodeApp:
             
             # vycisti i panel modu a grafiku jelikoz soucasna abeceda jiz nebude
             self.clear_panel_modes()
-            self.clear_panel_graphics()
+            #self.clear_panel_graphics()
 
         def create_alphabet_widgets():
             """Pomocná funkce do panelu abecedy vytvoří potřebné widgety."""
@@ -1067,6 +1150,7 @@ class EffectiveCodeApp:
         """Funkce umožní uživateli uložit obsah toho co vidi do csv souboru."""
         # zeptej se uzivatele kam ulozit
         file_name = filedialog.asksaveasfilename(defaultextension = ".csv",
+                                                 initialdir = self.app_directory,
                                                  filetypes = [("CSV files",
                                                                "*.csv"),
                                                                ("All files",
@@ -1083,36 +1167,53 @@ class EffectiveCodeApp:
                     #vytvor writer
                     writer = csv.writer(file)
 
-                    # ziskani latex stringu rovnic
-                    equations = self.graphics_view.get_equations_latex_string()
+                    # ziskani dictionary stringu vzorcu a jejich rovnic
+                    equations = self.graphics_view.get_equations_dict()
 
-
-                    # projit vsechny widgery v radcich(row) a sloupcih(col)
+                    # projit vsechny widgety v radcich (row) a sloupcich (col)
                     for row in range(self.graphics_view.grid_size()[1]):
                         data_row = []
+                        skip_cols = 0
 
                         # na kazdem radku projdi vsechny indexy sloupcu
                         for col in range(self.graphics_view.grid_size()[0]):
-                            # ziskani konkretniho widgetu v gridu na pozici
-                            # (row, col)
+                            # pokud je sloupec preskocen kvuli columnspan
+                            # snizit skip_cols a pokracovat dal
+                            if skip_cols > 0:
+                                data_row.append("")
+                                skip_cols -= 1
+                                continue
+                            
+                            # ziskani konkretniho widgetu v gridu na pozici (row, col)
                             widget = self.graphics_view.grid_slaves(row = row,
                                                                     column = col)
-                            
+
                             # over ze widget neni prazdny a zapis
                             if widget:
-                                text = widget[0].cget("text")
-
+                                widget = widget[0]
+                                text = widget.cget("text")
+                                
+                                # pokud je widget s rovnicich zapis text rovnice
                                 if text in equations:
                                     data_row.append(equations[text])
+                                # jinak zapis normalni text widgetu
                                 else:
                                     data_row.append(text)
+
+                                # zjisteni columnspan
+                                columnspan = widget.grid_info().get('columnspan', 1)
+                                
+                                # pridani prazdnych poli pro sloucenou bunku
+                                for _ in range(1, columnspan):
+                                    data_row.append("")
+
+                                skip_cols = columnspan - 1
                             else:
                                 data_row.append("")
-                            # mozna budu muset zde doplnit prazdne pole pro pripad
-                            # ze if widget vyhodnoti false  # debug # TODO
-                        
+
                         # zapis ziskany radek dat do csv souboru
                         writer.writerow(data_row)
+
                 messagebox.showinfo("Uložení úspěšné",
                                     "Uložení obsahu okna do souboru: "
                                     f"{os.path.basename(file_name)} proběhlo úspěšně.")
@@ -1129,6 +1230,7 @@ class EffectiveCodeApp:
         """Funkce umožní uživateli uložit obsah zobrazovany do graphics view."""
         # prompt uzivateli a ziskani jmena souboru
         file_name = filedialog.asksaveasfilename(defaultextension = ".png",
+                                                 initialdir = self.app_directory,
                                                  filetypes = [("PNG files",
                                                                "*.png"),
                                                                ("All files",
@@ -1180,7 +1282,8 @@ class EffectiveCodeApp:
         Funkce vrací 2 listy: [characters, probabilities]."""
         try:
             # prompt uzivateli kde muze otevrit json soubory s abecedou
-            file_name = filedialog.askopenfilename(filetypes=[("JSON files",
+            file_name = filedialog.askopenfilename(initialdir = self.app_directory,
+                                                   filetypes=[("JSON files",
                                                                "*.json")])
             
             # pokud uzivatel zvolil soubor pokracuj
@@ -1222,6 +1325,7 @@ class EffectiveCodeApp:
         try:
             # zobrazeni dialogoveho okna uzivateli s moznosti ulozeni
             file_path = filedialog.asksaveasfilename(defaultextension=".json",
+                                                     initialdir = self.app_directory,
                                                      filetypes=[("JSON files",
                                                                  "*.json")])
             

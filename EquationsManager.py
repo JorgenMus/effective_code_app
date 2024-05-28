@@ -27,7 +27,7 @@ class EquationsManager:
         self.images = {}
         self.font_size = font_size
 
-    # funkce vraci dictionary rovnic pro mozny zapis do csv souboru
+    # funkce vraci dict rovnic pro mozny zapis do csv souboru
     def get_equations(self):
         """Pomocná funkce vrátí svůj nadefinovaný seznam rovnic.
         

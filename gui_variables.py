@@ -77,11 +77,18 @@ GR_MINW = 400
 GR_DPI = 100
 GR_FONT_SIZE = 16
 
+# udaje pro enkoder
+ENCODER_WIDTH = 400
+
 
 # hodnoty pro combobox selekci metod
 COMBOBOX_METHOD_SHANNON = "Shannon-Fanova"
 COMBOBOX_METHOD_HUFFMAN = "Huffmanova"
 COMBOBOX_PROMPT = "Vybrat metodu kódování"
+
+# text tlacitka pro enkoder
+ENCODER_PROMPT_USE_METHOD = "Zakódovat"
+ENCODER_PROMPT_ENCODE_EVEN_PARITY = "Spustit enkodér\n(zabezpečení sudou paritou)"
 
 # nazvy vzorcu pro vypocty
 EQ_NAME_AVG_INFO_VALUE = "AVG_INFORMATION_VALUE"

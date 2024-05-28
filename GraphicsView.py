@@ -36,17 +36,24 @@ class GraphicsView(tk.Frame):
     def on_configure(self, event):
         self.adjust_frame_size()
 
+    # funkce vraci cely dictionary (nazev vzorce : vzorec string)
+    def get_equations_dict(self):
+        """Funkce vrací celý dictionary rovnic.
+        
+        dictionary rovnic: Nazev vzorce (string) : vzorec (latex string)"""
+        return self.equations_manager.get_equations()
+    
     # helper function vraci list latex stringu rovnic z equationsmanager tridy
     def get_equations_latex_string(self):
         # ziskani dictionary
         latex_dict = self.equations_manager.get_equations()
 
-        latex_strings = latex_dict.values()
+        latex_strings = [string for string in latex_dict.values()]
 
         # debug print
         print(f"vracim stringy rovnic:\n{latex_strings}")
 
-        return latex_strings
+        return latex_dict  # TODO rozhodnou zda vracet dict nebo list
 
     # funkce vraci rozmery monitoru
     def get_screen_size(self):
