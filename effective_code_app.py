@@ -1,6 +1,7 @@
 import tkinter as tk  # pro vykresleni GUI aplikace
 from tkinter import filedialog, messagebox, ttk # dialog, message okna a combobox(ttk)
 import pandas as pd  # pro pripadne nacitani a zpracovani dat z excel souboru
+import csv  # ukladani do csv souboru (pro excel) - data z tabulky pro abecedu
 import math
 import matplotlib.pyplot as pplt  # pro MATH vzorce (podobne LaTeX)
 from graphviz import Digraph  # vytvareni, manipulace grafu a siti (pro binarni stromy)
@@ -9,6 +10,8 @@ import json  # ulozeni/nacteni abecedy z JSON souboru
 from GraphicsView import GraphicsView  # moje trida pro zapouzdreni ruznych zobrazeni dat
 from encoding_helper import Node, get_average_word_length
 from encoding_helper import get_source_entropy, get_code_effectivity
+from PIL import Image, ImageGrab  # ukladani do png souboru
+import os
 
 # trida pro hlavni okno aplikace
 class EffectiveCodeApp:
@@ -713,14 +716,22 @@ class EffectiveCodeApp:
                                padx = gv.BUTTON_BUFFER,
                                pady = gv.BUTTON_BUFFER)
         
-        # debug - test button, need to add more functionality for shannon stuff etc.
-        modes_button_second = tk.Button(self.panel_modes,
-                                        text = "test button",
-                                        command = lambda: set_active_mode(gv.MODE_TESTING,
-                                                                          modes_button_second))
-        modes_button_second.pack(side = tk.LEFT,
-                                 padx = gv.BUTTON_BUFFER,
-                                 pady = gv.BUTTON_BUFFER)
+        # debug - test button
+        #modes_button_second = tk.Button(self.panel_modes,
+        #                                text = "test button",
+        #                                command = lambda: set_active_mode(gv.MODE_TESTING,
+        #                                                                  modes_button_second))
+        #modes_button_second.pack(side = tk.LEFT,
+        #                         padx = gv.BUTTON_BUFFER,
+        #                         pady = gv.BUTTON_BUFFER)
+
+        # tlacitko pro ulozeni aktualniho obsahu v graphics_view
+        modes_button_save_view = tk.Button(self.panel_modes,
+                                           text = "Uložit pohled",
+                                           command = self.on_save_view)
+        modes_button_save_view.pack(side = tk.LEFT,
+                                    padx = gv.BUTTON_BUFFER,
+                                    pady = gv.BUTTON_BUFFER)
         
         # tlacitko pro mod zobrazeni binarniho stromu
         modes_button_show_graph = tk.Button(self.panel_modes,
@@ -765,7 +776,7 @@ class EffectiveCodeApp:
         
         V případě špatně zadaných znaků v abecedě otevře editační okno."""
         # nacti data abecedy z json souboru
-        chars, probs, file_name = self.load_alphabet_from_json_file()
+        chars, probs, alphabet_name = self.load_alphabet_from_json_file()
 
         # validace abecedy (pokud nejaka chyba spust editaci abecedy)
         if self.is_alphabet_valid(chars, probs) == False:
@@ -778,13 +789,13 @@ class EffectiveCodeApp:
         # validace po editaci abecedy
         if self.is_alphabet_valid(chars, probs):
             # predej abecedu oknu pro dalsi praci
-            self.use_alphabet(chars, probs, file_name)
+            self.use_alphabet(chars, probs, alphabet_name)
         else:
             messagebox.showwarning("Varování",
                                    "Předaná abeceda není validní.")
 
 
-    def use_alphabet(self, chars, probs, file_name = None):
+    def use_alphabet(self, chars, probs, alphabet_name = None):
         """Funkce nastavi predanou abecedu do hlavniho okna pro dalsi praci.
         
         Po uložení abecedy do okna projde widgety v panelu abecedy a vymaže
@@ -797,7 +808,10 @@ class EffectiveCodeApp:
         self.current_mode = None
 
         # nastaveni jmena abecedy
-        self.alphabet_name = file_name
+        self.alphabet_name = alphabet_name
+        
+        #debug
+        print(f"\t\t\tNastavuje nove jmeno abecedy -- {self.alphabet_name}")
 
         # ulozeni znaku a pravdepodobnosti do okna
         self.characters_list = chars
@@ -998,6 +1012,168 @@ class EffectiveCodeApp:
         """Pomocná funkce uzavře předané okno"""
         window.destroy()
 
+    # event handler resi ulozeni aktualnich dat z graphics_view
+    def on_save_view(self):
+        """Funkce řeší uloží aktuální zobrazení.
+        
+        Pokud je uživatel v módu grafu, volá funkci k uložení do png.
+        Pokud je uživatel v módu info o abecedě, volá funkci k uložení jinak."""
+        # reseni ulozeni pri modu zobrazeni: informace o abecede
+        if self.current_mode == gv.MODE_ALPHABET_INFORMATION:
+            # debug print
+            print(f"zvoleno ulozeni informaci pro abecedu,"
+                  "proved ulozeni dat do excel souboru...")
+            self.save_view_to_csv()
+
+        # reseni ulozeni pri modu zobrazeni: graf
+        elif self.current_mode == gv.MODE_ALPHABET_GRAPH:
+            saving_possible = False
+            # overeni ze je co ukladat
+            match self.encoding_method:
+                case gv.COMBOBOX_METHOD_SHANNON:
+                    if self.shannon_complete:
+                        # zobrazuji se pritomne data, muzes save
+                        saving_possible = True
+                    else:
+                        messagebox.showinfo("Nelze uložit", "zvolená metoda "
+                                             f"{self.encoding_method} "
+                                            "zatím nebyla použita, nejdříve "
+                                            "klikněte na 'Použít kódování'.")
+                case gv.COMBOBOX_METHOD_HUFFMAN:
+                    if self.huffman_complete:
+                        # zobrazuji se pritomne data, muzes save
+                        saving_possible = True
+                    else:
+                        messagebox.showinfo("Nelze uložit", "zvolená metoda "
+                                             f"{self.encoding_method} "
+                                            "zatím nebyla použita, nejdříve "
+                                            "klikněte na 'Použít kódování'.")
+                case _:
+                    messagebox.showinfo("Nelze uložit",
+                                        "Zatím není co ukládat, nebyla zvolena"
+                                        " metoda kódování.")
+            
+            #pokud je pro zvolenou metodu i vykresleny dostupny graf, uloz
+            if saving_possible == True:
+                self.save_view_to_png()
+            else:
+                pass
+        # pokud jina moznost nic nedelej
+        else:
+            pass
+
+    # funkce spusti ulozeni zobrazenych dat (informace abecedy) do csv souboru
+    def save_view_to_csv(self):
+        """Funkce umožní uživateli uložit obsah toho co vidi do csv souboru."""
+        # zeptej se uzivatele kam ulozit
+        file_name = filedialog.asksaveasfilename(defaultextension = ".csv",
+                                                 filetypes = [("CSV files",
+                                                               "*.csv"),
+                                                               ("All files",
+                                                                "*.*")])
+        
+        # pokus se provest ulozeni
+        if file_name:
+            try:
+                # otevreni souboru ve "write" modu
+                with open(file_name,
+                          mode = "w",
+                          newline = "",
+                          encoding = "utf-8-sig") as file:
+                    #vytvor writer
+                    writer = csv.writer(file)
+
+                    # ziskani latex stringu rovnic
+                    equations = self.graphics_view.get_equations_latex_string()
+
+
+                    # projit vsechny widgery v radcich(row) a sloupcih(col)
+                    for row in range(self.graphics_view.grid_size()[1]):
+                        data_row = []
+
+                        # na kazdem radku projdi vsechny indexy sloupcu
+                        for col in range(self.graphics_view.grid_size()[0]):
+                            # ziskani konkretniho widgetu v gridu na pozici
+                            # (row, col)
+                            widget = self.graphics_view.grid_slaves(row = row,
+                                                                    column = col)
+                            
+                            # over ze widget neni prazdny a zapis
+                            if widget:
+                                text = widget[0].cget("text")
+
+                                if text in equations:
+                                    data_row.append(equations[text])
+                                else:
+                                    data_row.append(text)
+                            else:
+                                data_row.append("")
+                            # mozna budu muset zde doplnit prazdne pole pro pripad
+                            # ze if widget vyhodnoti false  # debug # TODO
+                        
+                        # zapis ziskany radek dat do csv souboru
+                        writer.writerow(data_row)
+                messagebox.showinfo("Uložení úspěšné",
+                                    "Uložení obsahu okna do souboru: "
+                                    f"{os.path.basename(file_name)} proběhlo úspěšně.")
+            except Exception as ex:
+                messagebox.showerror("Neúspěšné uložení",
+                                     "Uložení dat o abecedě do souboru se nepodařilo: "
+                                     f"{ex}.")
+        else:
+            messagebox.showinfo("Zrušení ukládání", 
+                                "Ukládání do souboru bylo zrušeno uživatelem.")
+                    
+    # funkce spusti ulozeni aktualne zobrazenych informaci v graphics_view
+    def save_view_to_png(self):
+        """Funkce umožní uživateli uložit obsah zobrazovany do graphics view."""
+        # prompt uzivateli a ziskani jmena souboru
+        file_name = filedialog.asksaveasfilename(defaultextension = ".png",
+                                                 filetypes = [("PNG files",
+                                                               "*.png"),
+                                                               ("All files",
+                                                                "*.*")])
+        # pokud byl zvolen soubor pokracuj
+        if file_name:
+            # zkus vytahnout image z graphics view a ulozit
+            try:
+                ### method 2 (works but doesnt capture what bigger than screenspace)
+                widget = self.graphics_canvas
+                widget.update()
+                widget.focus()
+                #x0 = widget.winfo_x()
+                #y0 = widget.winfo_y()
+                x0 = widget.winfo_rootx()
+                y0 = widget.winfo_rooty()
+                x1 = x0 + widget.winfo_width()
+                y1 = y0 + widget.winfo_height()
+
+
+                # debug
+                print(f"ukladam obrazek, rozmery:\n"
+                      f"\tx0, y0, x1, y1: {x0}, {y0}, {x1}, {y1}\n")
+
+                img = ImageGrab.grab((x0, y0, x1, y1))
+
+                # resize and interpolate (resample)
+                scale = 2
+                img = img.resize((int(img.size[0] * scale),
+                                  int(img.size[1] * scale)),
+                                  resample = Image.LANCZOS)
+
+                img.save(file_name)
+
+
+
+                messagebox.showinfo("Uložení úspěšné",
+                                    "Uložení obsahu okna do souboru: "
+                                    f"{os.path.basename(file_name)} proběhlo úspěšně.")
+            except Exception as ex:
+                messagebox.showerror("Neúspěšné uložení",
+                                     f"Uložení do souboru selhalo: {ex}.")
+        else:
+            messagebox.showinfo("Zrušení ukládání",
+                                "Ukládání do souboru bylo zrušeno uživatelem.")
     def load_alphabet_from_json_file(self):
         """Funkce načte abecedu zdrojových znaků ze souboru z JSON souboru.
         

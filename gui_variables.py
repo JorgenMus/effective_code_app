@@ -73,6 +73,10 @@ FONT_EQUATIONS = 20
 # udaje pro grafy (binarni stromy)
 GRAPH_WIDTH = 800
 GRAPH_HEIGHT = 600
+GR_MINW = 400
+GR_DPI = 100
+GR_FONT_SIZE = 16
+
 
 # hodnoty pro combobox selekci metod
 COMBOBOX_METHOD_SHANNON = "Shannon-Fanova"

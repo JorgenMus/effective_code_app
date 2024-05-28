@@ -6,6 +6,7 @@ import tkinter as tk
 import gui_variables as gv
 from EquationsManager import EquationsManager
 from binary_tree_maker import BinaryTreeMaker
+import platform  # ziskani jaky OS ma uzivatel
 
 class GraphicsView(tk.Frame):
     """Třída umožňuje po inicializaci ukládat předané data do tk.Frame."""
@@ -26,12 +27,69 @@ class GraphicsView(tk.Frame):
         # generator binarnich stromu
         self.bt_maker = BinaryTreeMaker()
         self.bt_current_image = None
+        
+        # rozmery pro grafy
+        self.screen_size = self.get_screen_size()
 
 
     # event handler
     def on_configure(self, event):
         self.adjust_frame_size()
 
+    # helper function vraci list latex stringu rovnic z equationsmanager tridy
+    def get_equations_latex_string(self):
+        # ziskani dictionary
+        latex_dict = self.equations_manager.get_equations()
+
+        latex_strings = latex_dict.values()
+
+        # debug print
+        print(f"vracim stringy rovnic:\n{latex_strings}")
+
+        return latex_strings
+
+    # funkce vraci rozmery monitoru
+    def get_screen_size(self):
+        """Funkce pomocí modulu ctype vraci sirku a vysku monitoru."""
+
+        user_platform = platform.system()
+
+        #debug
+        print(f"zjistena platforma: {user_platform}")
+
+        screen_size = (gv.WINDOW_MIN_WIDTH, gv.WINDOW_MIN_HEIGHT)
+
+        match user_platform:
+            case "Windows":
+                # windows pro ziskani velikosti obrazovky
+                import ctypes
+                user32 = ctypes.windll.user32
+                screen_width = user32.GetSystemMetrics(0)
+                screen_height = user32.GetSystemMetrics(1)
+                screen_size = (screen_width, screen_height)
+            case "Linux":
+                # linux
+                import subprocess
+                output = subprocess.check_output(['xdpyinfo']).decode("utf-8")
+                lines = output.split("\n")
+                for line in lines:
+                    if "dimensions:" in line:
+                        size_str = line.split(":")[-1].strip()
+                        width, height = map(int, size_str.split("x"))
+                        screen_size = (width, height)
+            case _:
+                print(f"Systém {user_platform} neni podporován, některé rozměry"
+                      "můžou být špatně nastaveny.")
+        
+        # debug
+        print(f"zjistena velikost obrazovky: {screen_size}")
+        return screen_size
+
+
+        
+        #debug print
+        print(f"found screen size: width = {screen_width}, height = {screen_height}")
+        return (screen_width, screen_height)
     # Funkce upravi rozmer frame na aktualni velikost gridu uvnitr
     def adjust_frame_size(self):
         """Funkce pro upravu rozmeru"""
@@ -87,12 +145,22 @@ class GraphicsView(tk.Frame):
                               relief = "solid",
                               padx = gv.LABEL_BUFFER_X)
         try:
+            # upraveni velikost pro graf
+            graph_width = self.screen_size[0] - gv.WINDOW_BUFFER
+            graph_height = self.screen_size[1] - gv.WINDOW_BUFFER
+
+            # method 2 - velikost grafu podle velkosti parentu (canvas)-buffer
+            graph_width = self.parent.winfo_width()
+            graph_height = self.parent.winfo_height()
+
+            #debug
+            print(f"velikost grafu: ({graph_width}, {graph_height})")
+
             self.bt_current_image = self.bt_maker.get_tree_image(code_words,
                                                                  characters,
                                                                  graph_name,
-                                                                 (gv.GRAPH_WIDTH,
-                                                                  gv.GRAPH_HEIGHT))
-                                                                 #gv.GRAPH_SIZE)
+                                                                 (graph_width,
+                                                                  graph_height))
             tree_label.configure(image = self.bt_current_image)
         except Exception as ex:
             # debug print
@@ -252,8 +320,19 @@ class GraphicsView(tk.Frame):
         self.adjust_frame_size()
 
 
+    # funkce vraci nutnou sirku a vysku pro obsazeni sebe sama
+    def get_req_width_height(self):
+        """Funkce vraci reqwidth a reqheight sebe sama."""
+        # aktualizuj obsah
+        self.update_idletasks()
 
+        # vytazeni rozmeru
+        reqwidth = self.winfo_reqwidth
+        reqheight = self.winfo_reqheight
 
+        # vrat rozmery jako tuple
+        return reqwidth, reqheight
+    
     def center_position(self):
         self.parent.update_idletasks()
         parent_width = self.parent.winfo_width()

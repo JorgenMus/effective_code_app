@@ -27,6 +27,13 @@ class EquationsManager:
         self.images = {}
         self.font_size = font_size
 
+    # funkce vraci dictionary rovnic pro mozny zapis do csv souboru
+    def get_equations(self):
+        """Pomocná funkce vrátí svůj nadefinovaný seznam rovnic.
+        
+        Rovnice jsou formátované LaTeX stringy."""
+        return self.equations_dict
+    
     # vytvoreni obrazku pro vzorec
     def create_image(self, equation, file_name):
         """Vytvoření obrázku pro předanou rovnici do předaného souboru."""

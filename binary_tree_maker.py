@@ -8,6 +8,7 @@ import networkx as nx
 import matplotlib.pyplot as pplt
 from PIL import Image, ImageTk
 from networkx.drawing.nx_agraph import graphviz_layout
+import gui_variables as gv
 
 class BinaryTreeMaker:
     """Třída umí vytvořit graf binárního stromu a udělat z něj obrázek.
@@ -39,14 +40,29 @@ class BinaryTreeMaker:
         self.generated_tree = tree
 
     # funkce vytvoreni obrazku ze stromu (varianta graphviz)
-    def create_image_graphviz(self, file_name, size = (400, 400)):
+    def create_image_graphviz(self, file_name,
+                              size = (gv.GR_MINW, gv.GR_MINW),
+                              dpi = gv.GR_DPI):
         # Vykreslení grafu s Graphviz uspořádáním
-        pos = graphviz_layout(self.generated_tree, prog='dot')
+        pos = graphviz_layout(self.generated_tree,
+                              prog='dot',  # vhodne pro directed graphs
+                              args = "-Grankdir=BT -Granksep=100")  # od spodu nahoru
+                              
         labels = nx.get_node_attributes(self.generated_tree, 'label')
         edge_labels = nx.get_edge_attributes(self.generated_tree, 'label')
 
-        pplt.figure(figsize=(10, 8))
-        nx.draw(self.generated_tree, pos, with_labels=True, labels=labels, node_size=500, node_color="lightblue", font_size=12, font_weight="bold")
+        size = (size[0] / dpi, size[1] / dpi)
+
+        # pplt.figure(figsize=(10, 8))
+        pplt.figure(figsize = size)
+        nx.draw(self.generated_tree,
+                pos,
+                with_labels = True,
+                labels = labels,
+                node_size = 500,
+                node_color = "lightblue",
+                font_size = gv.GR_FONT_SIZE,
+                font_weight="bold")
         nx.draw_networkx_edge_labels(self.generated_tree, pos, edge_labels=edge_labels)
         
         pplt.savefig(file_name, bbox_inches="tight")
