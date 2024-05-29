@@ -7,7 +7,8 @@ import os
 import networkx as nx
 import matplotlib.pyplot as pplt
 from PIL import Image, ImageTk
-from networkx.drawing.nx_agraph import graphviz_layout
+#import networkx.drawing.nx_agraph as graph_nx
+#from networkx.drawing.nx_agraph import graphviz_layout
 import gui_variables as gv
 
 class BinaryTreeMaker:
@@ -44,9 +45,12 @@ class BinaryTreeMaker:
                               size = (gv.GR_MINW, gv.GR_MINW),
                               dpi = gv.GR_DPI):
         # Vykreslení grafu s Graphviz uspořádáním
-        pos = graphviz_layout(self.generated_tree,
-                              prog='dot',  # vhodne pro directed graphs
-                              args = "-Grankdir=BT -Granksep=100")  # od spodu nahoru
+        pos = nx.nx_agraph.graphviz_layout(self.generated_tree,
+                                       prog='dot',  # vhodne pro directed graphs
+                                       args = "-Grankdir=BT -Granksep=100")  # od spodu nahoru)
+        #pos = graphviz_layout(self.generated_tree,
+        #                      prog='dot',  # vhodne pro directed graphs
+        #                      args = "-Grankdir=BT -Granksep=100")  # od spodu nahoru
                               
         labels = nx.get_node_attributes(self.generated_tree, 'label')
         edge_labels = nx.get_edge_attributes(self.generated_tree, 'label')
@@ -76,19 +80,19 @@ class BinaryTreeMaker:
         # overeni zda jiz takovy graph byl vygenerovan
         if graph_name in self.images:
             # debug print
-            print(f"\tnalezen graph se jmenem '{graph_name}' vracim ho z MAKERU.")
+            #print(f"\tnalezen graph se jmenem '{graph_name}' vracim ho z MAKERU.")
             return self.images.get(graph_name)
         # graph dosud nebyl vygenerovan pokracuj
         else:
             #debug print
-            print(f"\tgraph se jmenem '{graph_name}' neni v dict images, vytvarim...")
+            #print(f"\tgraph se jmenem '{graph_name}' neni v dict images, vytvarim...")
             
             # pokud nebyl pridan graph_name vygeneruj
             if graph_name == None:
                 graph_name = f"graf_" + str(self.graph_counter)
 
             # debug print
-            print(f"\tnove jmeno grafu: '{graph_name}'")
+            #print(f"\tnove jmeno grafu: '{graph_name}'")
             # vytvoreni a ulozeni stromu pro graph
             
             self.create_binary_tree_graphviz(code_words, characters, graph_name)
