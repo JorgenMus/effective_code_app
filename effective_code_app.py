@@ -156,7 +156,7 @@ class EffectiveCodeApp:
         self.encoding_method = event.widget.get()
 
         # debug
-        print(f"vybrana hodnota z comboboxu: {self.encoding_method}\n")
+        #print(f"vybrana hodnota z comboboxu: {self.encoding_method}\n")
 
         # pokud je aktivni mod grafu,
         # pokus se zobrazit vybrany graf
@@ -171,7 +171,7 @@ class EffectiveCodeApp:
     def on_graphics_canvas_configure(self, event):
         """Funkce se stará o nastaveni scrollregionu a vycentrovani obsahu."""
         # debug
-        print("\ton_graphics_canvas_configure spusteno...\n\tupdate_idtelasks graphics_canvas spusteno...")
+        #print("\ton_graphics_canvas_configure spusteno...\n\tupdate_idtelasks graphics_canvas spusteno...")
 
         self.graphics_canvas.update_idletasks()
         #self.graphics_canvas.config(scrollregion = self.graphics_canvas.bbox("all"))
@@ -183,9 +183,6 @@ class EffectiveCodeApp:
     # event funkce pri stisknu tlacitka mysi
     def on_mouse_click(self, event):
         """Pomocná funkce řeší event stisku levého tlačítka myši."""
-        #print(f"Canvas button press at ({event.x}, {event.y})")  # debug
-        #self.graphics_canvas.scan_mark(event.x, event.y)
-
         self.mouse_click_start_x = event.x
         self.mouse_click_start_y = event.y
 
@@ -284,7 +281,7 @@ class EffectiveCodeApp:
     def show_alphabet_info(self):
         """Funkce do grafického panelu vypíše informace o zdrojové abecedě."""
         #debug print
-        print("\t---- spusteno show_alphabet_info ----")
+        #print("\t---- spusteno show_alphabet_info ----")
         # nejdrive vycistit panel
         #self.clear_panel_graphics()
 
@@ -311,7 +308,7 @@ class EffectiveCodeApp:
                                              self.calc_probabilities_list,
                                              self.calc_characters_information_list)
             #debug
-            print("\t\tshow 1\t\t")
+            #print("\t\tshow 1\t\t")
         else:
             # vyreseni zda ma uzivatel zvolenou metodu kodovani a zda jsou pritomny data
             match self.encoding_method:
@@ -347,7 +344,7 @@ class EffectiveCodeApp:
                                                          self.calc_characters_information_list,
                                                          self.shannon_encoded_chars_list)
                         #debug
-                        print("\t\tshow 2\t\t")
+                        #print("\t\tshow 2\t\t")
                     # vybran shannon ale nema jeste vypocitane data
                     else:
                         self.graphics_view.show_alphabet(names_list,
@@ -357,7 +354,7 @@ class EffectiveCodeApp:
                                                  self.calc_characters_information_list)
                         
                         #debug
-                        print("\t\tshow 3\t\t")
+                        #print("\t\tshow 3\t\t")
                 case gv.COMBOBOX_METHOD_HUFFMAN:
                     if self.huffman_complete:
                         # rozsir o dalsi nazvy sloupcu
@@ -389,7 +386,7 @@ class EffectiveCodeApp:
                                                          self.calc_characters_information_list,
                                                          self.huffman_encoded_chars_list)
                         #debug
-                        print("\t\tshow 4\t\t")
+                        #print("\t\tshow 4\t\t")
                     # vybrana moznost huffman ale data jeste nejsou spocteny
                     else:
                         self.graphics_view.show_alphabet(names_list,
@@ -398,7 +395,7 @@ class EffectiveCodeApp:
                                                  self.calc_probabilities_list,
                                                  self.calc_characters_information_list)
                         #debug
-                        print("\t\tshow 5\t\t")
+                        #print("\t\tshow 5\t\t")
                 # default moznost
                 case _:
                     print(f"Pokus o ukazani informaci o abecede s nedefinovanou metodou.\n")        
@@ -656,7 +653,7 @@ class EffectiveCodeApp:
     def apply_mode(self, mode):
 
         # debug
-        print(f"apply_mode --- {mode}")
+        #print(f"apply_mode --- {mode}")
         # podle modu zobraz pozadovane data do grafickeho panelu
         match mode:
             case gv.MODE_ALPHABET_INFORMATION:
@@ -698,15 +695,16 @@ class EffectiveCodeApp:
             method = self.encoding_method
 
             # debug
-            print(f"vybrana metoda {method} pro kodovani..")
+            #print(f"vybrana metoda {method} pro kodovani..")
 
             #pro kazdou metodu zavolej odpovidajici funkci kodovani
             if (method == gv.COMBOBOX_METHOD_SHANNON):
                 # vybran shannon, zkontroluj jestli neexistuji predchozi vysledky
                 if self.shannon_complete:
+                    pass
                     # shannon jiz byl proveden, nepocitej znovu
                     # debug print
-                    print(f"\tjiz existuje vypocteny vysledek pro shannona\n")
+                    #print(f"\tjiz existuje vypocteny vysledek pro shannona\n")
                 else:
                     # pokud vysledky pro shannon nejsou dopocitej a updatuj zobrazeni
                     self.encode_alphabet_shannon()
@@ -716,17 +714,18 @@ class EffectiveCodeApp:
                 # opet kontrola existujicich vysledku
                 if self.huffman_complete:
                     #debug print
-                    print(f"\tjiz existuje vypocteny vysledek pro huffmana\n")
+                    #print(f"\tjiz existuje vypocteny vysledek pro huffmana\n")
+                    pass
                 else:
                     # pokud neni huffman vypocitany proved vypocet
                     self.encode_alphabet_huffman()
                 self.apply_mode(self.current_mode)
             else:
                 #debug print
-                print("Nebyla vybrana zadna metoda kodovani vracim se z funkce.")
+                #print("Nebyla vybrana zadna metoda kodovani vracim se z funkce.")
                 return
             #debug
-            print(f"zakodovani metodou {method} probehlo ted by se mel zobrazit vysledek.\n")
+            #print(f"zakodovani metodou {method} probehlo ted by se mel zobrazit vysledek.\n")
 
         # tlacitko pro mod informaci o abecede
         modes_button_info = tk.Button(self.panel_modes,
@@ -798,7 +797,7 @@ class EffectiveCodeApp:
                                   pady = gv.BUTTON_BUFFER)
         
         #debug
-        print(f"combobox obnoven, aktualni hodnota v nej: {self.encoding_method}.\n")
+        #print(f"combobox obnoven, aktualni hodnota v nej: {self.encoding_method}.\n")
 
         
         # pri prvotni inicializaci aktivuj tlacitko pro info o abecede
@@ -819,7 +818,7 @@ class EffectiveCodeApp:
                     # spusteni enkoderu
                     encoder.show_encoding_window()
                     #debug
-                    print(f"ted by se mel spustit enkoder s kodem SHANNONA")
+                    #print(f"ted by se mel spustit enkoder s kodem SHANNONA")
                 # jinak vypis zpravu ze je treba kod dotvorit
                 else:
                     messagebox.showinfo("Nedostupný kód",
@@ -839,7 +838,7 @@ class EffectiveCodeApp:
                     encoder.show_encoding_window()
 
                     #debug
-                    print("ted by se mel spustit enkoder s koden HUFFMANA")
+                    #print("ted by se mel spustit enkoder s koden HUFFMANA")
                 # jinak vypis zpravu ze je treba kod dotvorit
                 else:
                     messagebox.showinfo("Nedostupný kód",
@@ -894,7 +893,7 @@ class EffectiveCodeApp:
         self.alphabet_name = alphabet_name
         
         #debug
-        print(f"\t\t\tNastavuje nove jmeno abecedy -- {self.alphabet_name}")
+        #print(f"\t\t\tNastavuje nove jmeno abecedy -- {self.alphabet_name}")
 
         # ulozeni znaku a pravdepodobnosti do okna
         self.characters_list = chars
@@ -1104,8 +1103,8 @@ class EffectiveCodeApp:
         # reseni ulozeni pri modu zobrazeni: informace o abecede
         if self.current_mode == gv.MODE_ALPHABET_INFORMATION:
             # debug print
-            print(f"zvoleno ulozeni informaci pro abecedu,"
-                  "proved ulozeni dat do excel souboru...")
+            #print(f"zvoleno ulozeni informaci pro abecedu,"
+            #      "proved ulozeni dat do excel souboru...")
             self.save_view_to_csv()
 
         # reseni ulozeni pri modu zobrazeni: graf
@@ -1252,8 +1251,8 @@ class EffectiveCodeApp:
 
 
                 # debug
-                print(f"ukladam obrazek, rozmery:\n"
-                      f"\tx0, y0, x1, y1: {x0}, {y0}, {x1}, {y1}\n")
+                #print(f"ukladam obrazek, rozmery:\n"
+                #      f"\tx0, y0, x1, y1: {x0}, {y0}, {x1}, {y1}\n")
 
                 img = ImageGrab.grab((x0, y0, x1, y1))
 

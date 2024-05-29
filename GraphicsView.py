@@ -51,9 +51,9 @@ class GraphicsView(tk.Frame):
         latex_strings = [string for string in latex_dict.values()]
 
         # debug print
-        print(f"vracim stringy rovnic:\n{latex_strings}")
+        #print(f"vracim stringy rovnic:\n{latex_strings}")
 
-        return latex_dict  # TODO rozhodnou zda vracet dict nebo list
+        return latex_dict  
 
     # funkce vraci rozmery monitoru
     def get_screen_size(self):
@@ -62,7 +62,7 @@ class GraphicsView(tk.Frame):
         user_platform = platform.system()
 
         #debug
-        print(f"zjistena platforma: {user_platform}")
+        #print(f"zjistena platforma: {user_platform}")
 
         screen_size = (gv.WINDOW_MIN_WIDTH, gv.WINDOW_MIN_HEIGHT)
 
@@ -89,19 +89,14 @@ class GraphicsView(tk.Frame):
                       "můžou být špatně nastaveny.")
         
         # debug
-        print(f"zjistena velikost obrazovky: {screen_size}")
+       # print(f"zjistena velikost obrazovky: {screen_size}")
         return screen_size
 
-
-        
-        #debug print
-        print(f"found screen size: width = {screen_width}, height = {screen_height}")
-        return (screen_width, screen_height)
     # Funkce upravi rozmer frame na aktualni velikost gridu uvnitr
     def adjust_frame_size(self):
         """Funkce pro upravu rozmeru"""
         #debug
-        print("\t\tZavolano adjust_frame_size")
+        #print("\t\tZavolano adjust_frame_size")
 
         # pokus update idletasks (neupdatujou se scrollbary v graphics_canvas)
         self.update_idletasks()
@@ -161,7 +156,7 @@ class GraphicsView(tk.Frame):
             graph_height = self.parent.winfo_height()
 
             #debug
-            print(f"velikost grafu: ({graph_width}, {graph_height})")
+            #print(f"velikost grafu: ({graph_width}, {graph_height})")
 
             self.bt_current_image = self.bt_maker.get_tree_image(code_words,
                                                                  characters,
@@ -171,7 +166,7 @@ class GraphicsView(tk.Frame):
             tree_label.configure(image = self.bt_current_image)
         except Exception as ex:
             # debug print
-            print(f"Nepodarilo se nacist obrazek grafu: {ex}")
+            #print(f"Nepodarilo se nacist obrazek grafu: {ex}")
             tree_label.configure(image = None)
         tree_label.grid(row = 0,
                      column = 0,
@@ -190,13 +185,6 @@ class GraphicsView(tk.Frame):
         avg_info_value - bude zobrazena v poslednim radku
         comun_names_list - list nazvu pro sloupce
         lists_of_values - listy hodnot pro jednotlive sloupce."""
-
-        # debug
-        #print("Obdrzene hodnoty do show_alphabet:\n")
-        #print(f"column_names_list:\n{column_names_list}\n")
-        #print(f"bottom_data_list:\n{bottom_data_list}\n")
-        #print(f"list_of_values:\n{lists_of_values}\n")
-        #print(f"number of given data lists (eg. number of columns drawn): {len(lists_of_values)}")
 
         # nejdrive vymaz predchozi obsah
         self.clear_frame()
@@ -276,7 +264,7 @@ class GraphicsView(tk.Frame):
                 label_2.configure(image = image)
             except Exception as ex:
                 # debug print
-                print(f"Nepodarilo se nacist obrazek rovnice: {ex}")
+                #print(f"Nepodarilo se nacist obrazek rovnice: {ex}")
                 label_2.configure(image = None)
             label_2.grid(row = row_index,
                          column = num_of_lists - 2,
@@ -340,21 +328,17 @@ class GraphicsView(tk.Frame):
         # vrat rozmery jako tuple
         return reqwidth, reqheight
     
-    def center_position(self):
-        self.parent.update_idletasks()
-        parent_width = self.parent.winfo_width()
-        parent_height = self.parent.winfo_height()
-        width = self.winfo_reqwidth()
-        height = self.winfo_reqheight()
-        
-        new_x = (parent_width // 2) - (width // 2)
-        new_y = (parent_height // 2) - (height // 2)
-        # debug 2. pokus o center
-        #self.parent.create_window((new_x, new_y),
-        #                          window = self,
-        #                          anchor = "center")
-        
-        # debug 3. pokus o center
-        self.parent.create_window((0, 0),
-                                  window = self,
-                                  anchor = "center")
+    #def center_position(self):
+    #    self.parent.update_idletasks()
+    #    parent_width = self.parent.winfo_width()
+    #    parent_height = self.parent.winfo_height()
+    #    width = self.winfo_reqwidth()
+    #    height = self.winfo_reqheight()
+    #    
+    #    new_x = (parent_width // 2) - (width // 2)
+    #    new_y = (parent_height // 2) - (height // 2)
+    #    
+    #    # pokus o center
+    #    self.parent.create_window((0, 0),
+    #                              window = self,
+    #                              anchor = "center")

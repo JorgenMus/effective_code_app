@@ -70,7 +70,8 @@ class EquationsManager:
                 self.images[name] = ImageTk.PhotoImage(image)
             else:
                 # debug print
-                print(f"Nepodarilo se vytvorit vzorec: {name}, {equation}.")
+                #print(f"Nepodarilo se vytvorit vzorec: {name}, {equation}.")
+                pass
 
     # funkce vraci image pokud je takovy nazev ve slovnimu obrazku, jinak None
     def get_image(self, equation_name):
