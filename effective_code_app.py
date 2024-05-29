@@ -1,10 +1,10 @@
 import tkinter as tk  # pro vykresleni GUI aplikace
 from tkinter import filedialog, messagebox, ttk # dialog, message okna a combobox(ttk)
-import pandas as pd  # pro pripadne nacitani a zpracovani dat z excel souboru
+#import pandas as pd  # pro pripadne nacitani a zpracovani dat z excel souboru
 import csv  # ukladani do csv souboru (pro excel) - data z tabulky pro abecedu
 import math
-import matplotlib.pyplot as pplt  # pro MATH vzorce (podobne LaTeX)
-from graphviz import Digraph  # vytvareni, manipulace grafu a siti (pro binarni stromy)
+#import matplotlib.pyplot as pplt  # pro MATH vzorce (podobne LaTeX)
+#from graphviz import Digraph  # vytvareni, manipulace grafu a siti (pro binarni stromy)
 import gui_variables as gv  # global variables pro GUI
 import json  # ulozeni/nacteni abecedy z JSON souboru
 from GraphicsView import GraphicsView  # moje trida pro zapouzdreni ruznych zobrazeni dat

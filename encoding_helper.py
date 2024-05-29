@@ -2,7 +2,7 @@ import math
 import tkinter as tk
 from tkinter import scrolledtext
 import gui_variables as gv
-import unicodedata  # normalizace znaku unicode pro mapovani kodovych slov
+#import unicodedata  # normalizace znaku unicode pro mapovani kodovych slov
 
 # tato trida (uzel) ukazuje na 2 potomky (pouziti v huffman kodovani)
 # zna orig znak abecedy soucet jejich pravdepodobnosti
@@ -42,7 +42,8 @@ class EvenParityEncoder:
         self.code_dict = dict(zip(chars, code_words))  # pro encode_string
         self.encoding_window = None
         self.special_keys = [
-            'Up', 'Down', 'Left', 'Right', 'End', 'Home', 'BackSpace'
+            'Up', 'Down', 'Left', 'Right',
+            'End', 'Home', 'BackSpace'
         ]
 
     def show_encoding_window(self):
@@ -95,33 +96,37 @@ class EvenParityEncoder:
         """Pokud předany znak není v listu znaků abecedy smaže ho.
         
         lze obejit rychlim cvakanim na klavesnice, bude vyreseno dalsi metodou."""
-        pressed_char = event.keysym
 
-        # ignoruj znaky jako sipky, home, end, mezernik (pokud je v abecede)
-        if pressed_char == 'space' and ' ' in self.chars:
-            return
-        
-        if pressed_char in self.special_keys:
-            return  # ignoruj
+        # varianta 2
+        pressed_char = event.char
 
-        # pokud je soucasny znak "tisknutelny" a neni povoleny smaz ho
-        if pressed_char.isprintable() and pressed_char not in self.chars:
-            # Získání pozice kurzoru
-            cursor_position = self.UI_txtbox.index(tk.INSERT)
-
-            # pokud neni kurzor na zacatku posuneme ho o 1 zpet
-            if cursor_position != "0.0":
-                prev_char_pos = self.UI_txtbox.index(tk.INSERT + "-1c")
-                self.UI_txtbox.delete(prev_char_pos)
+        # overeni zda je znak alfanumericky nebo mezera
+        if pressed_char.isalnum() or pressed_char == ' ':
+            # pokud ano over ze je v abecede
+            if pressed_char in self.chars:
+                return  # povol jeho zapsani
+            # pokud neni v abecede tak ho smaz
             else:
-                # Kurzor je na začátku, takže smažeme první znak
-                self.UI_txtbox.delete("0")
+                # posun kurzor
+                cursor_position = self.UI_txtbox.index(tk.INSERT)
+
+                # pokud pozice neni uplni zacatek posun o jeden doleva
+                if cursor_position != "1.0":
+                    previous_char_position = self.UI_txtbox.index(tk.INSERT + "-1c")
+                    # a smaz tuto pozici
+                    self.UI_txtbox.delete(previous_char_position)
+                else:
+                    # pokud byl kurzor na zacatku textu smaz tento znak
+                    self.UI_txtbox.delete("1.0")
+        # jnak ignoruj znak
+        else:
+            return
 
     # event handler pro tlacitko
     def on_encode_button_click(self):
         """Funkce řeší event kdy uživatel klikne na tlačítko zabezpečit."""
         # debug
-        print("nyni se udela kodovani se zabezpecenim a zobrazi..")
+        #print("nyni se udela kodovani se zabezpecenim a zobrazi..")
         
         
         # ziskani textu co zadal uzivatel 
@@ -177,7 +182,7 @@ class EvenParityEncoder:
                 count_ones += 1
         
         #debug
-        print(f"pocet jednicek je {count_ones}")
+        #print(f"pocet jednicek je {count_ones}")
 
         # pokud je '1' sudy pocet pridej znak '0'
         if count_ones % 2 == 0:
